@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GENX TAKEOVER – Login</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    @keyframes fadeIn   { from { opacity:0 } to { opacity:1 } }
+    @keyframes slideUp  { from { opacity:0; transform:translateY(32px) } to { opacity:1; transform:translateY(0) } }
+    @keyframes spin     { to { transform:rotate(360deg) } }
+    @keyframes shimmer  { 0%,100%{ opacity:1 } 50%{ opacity:0.7 } }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      background: #0a0d1a;
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* Background stage photo */
+    .bg-photo {
+      position: fixed;
+      inset: 0;
+      background: url('/assets/bg-stage.png') center center / cover no-repeat;
+      z-index: 0;
+    }
+    .bg-overlay {
+      position: fixed;
+      inset: 0;
+      background: linear-gradient(
+        160deg,
+        rgba(10,15,35,0.72) 0%,
+        rgba(18,25,60,0.65) 50%,
+        rgba(10,15,35,0.80) 100%
+      );
+      z-index: 1;
+    }
+
+    /* Floating light orbs */
+    .orb {
+      position: fixed;
+      border-radius: 50%;
+      filter: blur(80px);
+      opacity: 0.25;
+      z-index: 1;
+      pointer-events: none;
+      animation: shimmer 6s ease-in-out infinite;
+    }
+    .orb-1 { width: 400px; height: 400px; background: #1a3f8c; top: -100px; left: -100px; animation-delay: 0s; }
+    .orb-2 { width: 300px; height: 300px; background: #f39c12; bottom: -80px; right: -80px; animation-delay: 2s; }
+    .orb-3 { width: 250px; height: 250px; background: #b91c1c; top: 40%; right: 5%; animation-delay: 4s; }
+
+    /* Login card */
+    .login-card {
+      position: relative;
+      z-index: 10;
+      width: 100%;
+      max-width: 440px;
+      background: rgba(255,255,255,0.97);
+      border-radius: 20px;
+      box-shadow: 0 32px 80px rgba(0,0,0,0.45), 0 0 0 1px rgba(255,255,255,0.15);
+      overflow: hidden;
+      animation: slideUp 0.6s cubic-bezier(0.4,0,0.2,1) forwards;
+    }
+
+    /* Card header */
+    .card-header {
+      background: linear-gradient(180deg, #1a3f8c 0%, #122d6a 100%);
+      border-bottom: 4px solid #b91c1c;
+      padding: 30px 28px 24px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 14px;
+      position: relative;
+      overflow: hidden;
+    }
+    .card-header::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(ellipse at 50% 120%, rgba(243,156,18,0.12), transparent 70%);
+    }
+    #loginLogo {
+      max-width: 300px;
+      max-height: 130px;
+      object-fit: contain;
+      display: none;
+      border-radius: 8px;
+      position: relative;
+    }
+    .logo-text {
+      font-size: 26px; font-weight: 900; letter-spacing: 3px;
+      color: #fff; text-transform: uppercase;
+      border: 3px solid #f39c12; padding: 6px 14px; border-radius: 4px;
+      line-height: 1.2; text-align: center; position: relative;
+    }
+    .card-subtitle {
+      color: rgba(255,255,255,0.6); font-size: 11px;
+      letter-spacing: 2px; text-transform: uppercase; position: relative;
+    }
+
+    /* Card body */
+    .card-body { padding: 30px 28px 24px; }
+
+    .form-group { margin-bottom: 18px; }
+    .form-group label {
+      display: block; font-size: 11px; font-weight: 700;
+      color: #6b7280; text-transform: uppercase;
+      letter-spacing: 0.6px; margin-bottom: 7px;
+    }
+    .form-group input {
+      width: 100%; padding: 12px 16px;
+      border: 1.5px solid #d0d7e2; border-radius: 10px;
+      font-size: 15px; color: #111827; outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+      font-family: inherit; background: #fafbfc;
+    }
+    .form-group input:focus {
+      border-color: #1a3f8c;
+      box-shadow: 0 0 0 3px rgba(26,63,140,0.12);
+      background: #fff;
+    }
+    .form-group input::placeholder { color: #c1c9d4; }
+
+    .btn-login {
+      width: 100%; padding: 14px;
+      background: linear-gradient(135deg, #1a3f8c, #2456a4);
+      color: #fff; border: none; border-radius: 10px;
+      font-size: 15px; font-weight: 700; cursor: pointer;
+      transition: all 0.2s; letter-spacing: 0.4px;
+      box-shadow: 0 4px 16px rgba(26,63,140,0.35);
+      position: relative; overflow: hidden;
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+    }
+    .btn-login:hover:not(:disabled) {
+      background: linear-gradient(135deg, #2456a4, #2d6bc4);
+      transform: translateY(-1px);
+      box-shadow: 0 8px 24px rgba(26,63,140,0.45);
+    }
+    .btn-login:active { transform: scale(0.98); }
+    .btn-login:disabled { opacity: 0.7; cursor: not-allowed; pointer-events: none; }
+    .spinner-sm {
+      width: 18px; height: 18px;
+      border: 2px solid rgba(255,255,255,0.4);
+      border-top-color: #fff; border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+    }
+
+    .error-msg {
+      background: #fee2e2; border: 1px solid #fca5a5; color: #dc2626;
+      padding: 11px 16px; border-radius: 8px; font-size: 13px;
+      margin-bottom: 18px; display: none;
+      animation: fadeIn 0.2s ease; align-items: center; gap: 8px;
+    }
+    .error-msg.show { display: flex; }
+    .error-msg::before { content: '⚠'; font-size: 14px; flex-shrink: 0; }
+
+    .card-footer {
+      text-align: center; padding: 0 28px 22px;
+      font-size: 12px; color: #9ca3af;
+    }
+
+    /* Version tag */
+    .version-tag {
+      position: fixed; bottom: 18px; right: 18px;
+      color: rgba(255,255,255,0.3); font-size: 11px; z-index: 10;
+    }
+  </style>
+</head>
+<body>
+  <div class="bg-photo"></div>
+  <div class="bg-overlay"></div>
+  <div class="orb orb-1"></div>
+  <div class="orb orb-2"></div>
+  <div class="orb orb-3"></div>
+
+  <div class="login-card">
+    <div class="card-header">
+      <img id="loginLogo" src="" alt="GENX TAKEOVER Logo">
+      <div class="logo-text" id="logoText">GENX<br>TAKEOVER</div>
+      <div class="card-subtitle">Expense Report System</div>
+    </div>
+    <div class="card-body">
+      <div class="error-msg" id="errorMsg"></div>
+      <form id="loginForm">
+        <div class="form-group">
+          <label>Username</label>
+          <input type="text" id="username" autocomplete="username" placeholder="Enter your username" required>
+        </div>
+        <div class="form-group">
+          <label>Password</label>
+          <input type="password" id="password" autocomplete="current-password" placeholder="Enter your password" required>
+        </div>
+        <button type="submit" class="btn-login" id="btnLogin">
+          <span id="btnText">Sign In</span>
+        </button>
+      </form>
+    </div>
+    <div class="card-footer">Contact your administrator for login credentials.</div>
+  </div>
+
+  <div class="version-tag">GENX Expense v2.0</div>
+
+  <script>
+    // Load logo
+    fetch('/api/logo').then(r=>r.json()).then(d => {
+      if (d.path) {
+        const img = document.getElementById('loginLogo');
+        img.src = d.path + '?t=' + Date.now();
+        img.style.display = 'block';
+        document.getElementById('logoText').style.display = 'none';
+      }
+    }).catch(()=>{});
+
+    // Redirect if already logged in
+    fetch('/api/auth/me').then(r => {
+      if (r.ok) return r.json().then(u => {
+        window.location.href = (u.role === 'admin' || u.role === 'superadmin') ? '/admin' : '/app';
+      });
+    }).catch(()=>{});
+
+    document.getElementById('loginForm').addEventListener('submit', async e => {
+      e.preventDefault();
+      const btn     = document.getElementById('btnLogin');
+      const btnText = document.getElementById('btnText');
+      const errEl   = document.getElementById('errorMsg');
+      errEl.classList.remove('show');
+      btn.disabled  = true;
+      btnText.textContent = '';
+      btn.insertAdjacentHTML('beforeend', '<span class="spinner-sm"></span>');
+
+      try {
+        const res  = await fetch('/api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            username: document.getElementById('username').value.trim(),
+            password: document.getElementById('password').value
+          })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Login failed');
+        const role = data.user.role;
+        window.location.href = (role === 'admin' || role === 'superadmin') ? '/admin' : '/app';
+      } catch (ex) {
+        errEl.textContent = ex.message;
+        errEl.classList.add('show');
+        btn.disabled = false;
+        btn.querySelector('.spinner-sm')?.remove();
+        btnText.textContent = 'Sign In';
+      }
+    });
+  </script>
+</body>
+</html>

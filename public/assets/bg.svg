@@ -1,0 +1,184 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 900" width="1440" height="900">
+  <defs>
+    <!-- Deep venue background -->
+    <linearGradient id="venueBg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#0a0515"/>
+      <stop offset="40%" stop-color="#110822"/>
+      <stop offset="100%" stop-color="#1a0a30"/>
+    </linearGradient>
+
+    <!-- Stage floor glow -->
+    <radialGradient id="stageGlow" cx="50%" cy="100%" r="60%">
+      <stop offset="0%" stop-color="#3a1060" stop-opacity="0.9"/>
+      <stop offset="100%" stop-color="#0a0515" stop-opacity="0"/>
+    </radialGradient>
+
+    <!-- Spotlight gradients -->
+    <radialGradient id="spot1" cx="50%" cy="0%" r="100%">
+      <stop offset="0%" stop-color="#ff60c0" stop-opacity="0.55"/>
+      <stop offset="100%" stop-color="#ff60c0" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="spot2" cx="50%" cy="0%" r="100%">
+      <stop offset="0%" stop-color="#a040ff" stop-opacity="0.5"/>
+      <stop offset="100%" stop-color="#a040ff" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="spot3" cx="50%" cy="0%" r="100%">
+      <stop offset="0%" stop-color="#00aaff" stop-opacity="0.45"/>
+      <stop offset="100%" stop-color="#00aaff" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="spot4" cx="50%" cy="0%" r="100%">
+      <stop offset="0%" stop-color="#ff9020" stop-opacity="0.4"/>
+      <stop offset="100%" stop-color="#ff9020" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="spot5" cx="50%" cy="0%" r="100%">
+      <stop offset="0%" stop-color="#ff3060" stop-opacity="0.45"/>
+      <stop offset="100%" stop-color="#ff3060" stop-opacity="0"/>
+    </radialGradient>
+
+    <!-- Haze / fog effect -->
+    <filter id="blur">
+      <feGaussianBlur stdDeviation="18"/>
+    </filter>
+    <filter id="softBlur">
+      <feGaussianBlur stdDeviation="6"/>
+    </filter>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="3" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+
+  <!-- Base background -->
+  <rect width="1440" height="900" fill="url(#venueBg)"/>
+
+  <!-- Stage floor glow -->
+  <rect width="1440" height="900" fill="url(#stageGlow)"/>
+
+  <!-- ═══ SPOTLIGHTS ═══ -->
+  <!-- Beam: far left pink -->
+  <polygon points="160,0 120,0 380,900 450,900" fill="url(#spot1)" opacity="0.35"/>
+  <!-- Beam: center-left purple -->
+  <polygon points="480,0 440,0 560,900 640,900" fill="url(#spot2)" opacity="0.3"/>
+  <!-- Beam: center blue -->
+  <polygon points="700,0 660,0 680,900 780,900" fill="url(#spot3)" opacity="0.35"/>
+  <!-- Beam: center-right orange -->
+  <polygon points="900,0 860,0 820,900 900,900" fill="url(#spot4)" opacity="0.28"/>
+  <!-- Beam: far right red/pink -->
+  <polygon points="1240,0 1200,0 1020,900 1100,900" fill="url(#spot5)" opacity="0.32"/>
+  <!-- Extra wide hazy beams -->
+  <polygon points="340,0 200,0 600,900 800,900" fill="url(#spot2)" opacity="0.08" filter="url(#blur)"/>
+  <polygon points="1100,0 950,0 700,900 950,900" fill="url(#spot3)" opacity="0.08" filter="url(#blur)"/>
+
+  <!-- ═══ STAGE LIGHTS (top rig) ═══ -->
+  <!-- Horizontal truss bar -->
+  <rect x="60" y="28" width="1320" height="7" rx="3" fill="#1a1a2e"/>
+  <rect x="60" y="28" width="1320" height="2" rx="1" fill="#2a2a4e"/>
+
+  <!-- Light fixtures -->
+  <!-- Group of lights across the truss -->
+  <g filter="url(#glow)">
+    <!-- Pink lights -->
+    <circle cx="160" cy="28" r="7" fill="#ff60c0"/>
+    <circle cx="160" cy="28" r="14" fill="#ff60c0" opacity="0.25" filter="url(#softBlur)"/>
+    <circle cx="480" cy="28" r="7" fill="#c040ff"/>
+    <circle cx="480" cy="28" r="14" fill="#c040ff" opacity="0.25" filter="url(#softBlur)"/>
+    <circle cx="720" cy="28" r="7" fill="#40aaff"/>
+    <circle cx="720" cy="28" r="14" fill="#40aaff" opacity="0.25" filter="url(#softBlur)"/>
+    <circle cx="960" cy="28" r="7" fill="#ff9020"/>
+    <circle cx="960" cy="28" r="14" fill="#ff9020" opacity="0.25" filter="url(#softBlur)"/>
+    <circle cx="1200" cy="28" r="7" fill="#ff3060"/>
+    <circle cx="1200" cy="28" r="14" fill="#ff3060" opacity="0.25" filter="url(#softBlur)"/>
+    <!-- Smaller accent lights -->
+    <circle cx="290" cy="28" r="5" fill="#ff9020" opacity="0.8"/>
+    <circle cx="600" cy="28" r="5" fill="#ff60c0" opacity="0.8"/>
+    <circle cx="840" cy="28" r="5" fill="#c040ff" opacity="0.8"/>
+    <circle cx="1080" cy="28" r="5" fill="#40aaff" opacity="0.8"/>
+    <circle cx="1340" cy="28" r="5" fill="#ff60c0" opacity="0.8"/>
+  </g>
+
+  <!-- ═══ CROWD SILHOUETTES ═══ -->
+  <g fill="#0d0820" opacity="0.95">
+    <!-- Row 1 – distant (small heads, very bottom) -->
+    <!-- Dense small silhouettes across bottom -->
+    <ellipse cx="60"  cy="900" rx="18" ry="55"/>
+    <ellipse cx="100" cy="900" rx="15" ry="50"/>
+    <ellipse cx="135" cy="900" rx="16" ry="52"/>
+    <ellipse cx="170" cy="900" rx="14" ry="48"/>
+    <ellipse cx="205" cy="900" rx="17" ry="54"/>
+    <ellipse cx="240" cy="900" rx="15" ry="50"/>
+    <ellipse cx="275" cy="900" rx="18" ry="56"/>
+    <ellipse cx="312" cy="900" rx="14" ry="48"/>
+    <ellipse cx="346" cy="900" rx="16" ry="52"/>
+    <ellipse cx="382" cy="900" rx="19" ry="58"/>
+    <ellipse cx="418" cy="900" rx="15" ry="50"/>
+    <ellipse cx="454" cy="900" rx="17" ry="54"/>
+    <ellipse cx="490" cy="900" rx="14" ry="47"/>
+    <ellipse cx="524" cy="900" rx="16" ry="51"/>
+    <ellipse cx="560" cy="900" rx="18" ry="55"/>
+    <ellipse cx="597" cy="900" rx="15" ry="49"/>
+    <ellipse cx="632" cy="900" rx="17" ry="53"/>
+    <ellipse cx="667" cy="900" rx="14" ry="48"/>
+    <ellipse cx="702" cy="900" rx="16" ry="52"/>
+    <ellipse cx="737" cy="900" rx="19" ry="57"/>
+    <ellipse cx="772" cy="900" rx="15" ry="50"/>
+    <ellipse cx="807" cy="900" rx="17" ry="54"/>
+    <ellipse cx="842" cy="900" rx="14" ry="47"/>
+    <ellipse cx="877" cy="900" rx="18" ry="56"/>
+    <ellipse cx="912" cy="900" rx="15" ry="50"/>
+    <ellipse cx="948" cy="900" rx="16" ry="52"/>
+    <ellipse cx="984" cy="900" rx="19" ry="58"/>
+    <ellipse cx="1020" cy="900" rx="14" ry="48"/>
+    <ellipse cx="1055" cy="900" rx="17" ry="54"/>
+    <ellipse cx="1090" cy="900" rx="15" ry="50"/>
+    <ellipse cx="1125" cy="900" rx="18" ry="56"/>
+    <ellipse cx="1160" cy="900" rx="14" ry="47"/>
+    <ellipse cx="1196" cy="900" rx="16" ry="52"/>
+    <ellipse cx="1232" cy="900" rx="19" ry="58"/>
+    <ellipse cx="1268" cy="900" rx="15" ry="50"/>
+    <ellipse cx="1303" cy="900" rx="17" ry="54"/>
+    <ellipse cx="1338" cy="900" rx="14" ry="48"/>
+    <ellipse cx="1374" cy="900" rx="18" ry="56"/>
+    <ellipse cx="1410" cy="900" rx="16" ry="52"/>
+
+    <!-- Some raised arms / phones -->
+    <rect x="88" y="840" width="5" height="35" rx="2" fill="#0d0820"/>
+    <rect x="86" y="835" width="9" height="6" rx="1" fill="#222244" opacity="0.8"/>
+    <rect x="268" y="835" width="5" height="40" rx="2" fill="#0d0820"/>
+    <rect x="266" y="829" width="9" height="7" rx="1" fill="#222244" opacity="0.8"/>
+    <rect x="545" y="838" width="5" height="36" rx="2" fill="#0d0820"/>
+    <rect x="723" y="832" width="5" height="42" rx="2" fill="#0d0820"/>
+    <rect x="721" y="826" width="9" height="7" rx="1" fill="#222244" opacity="0.8"/>
+    <rect x="980" y="836" width="5" height="38" rx="2" fill="#0d0820"/>
+    <rect x="1150" y="833" width="5" height="41" rx="2" fill="#0d0820"/>
+    <rect x="1148" y="827" width="9" height="7" rx="1" fill="#222244" opacity="0.8"/>
+    <rect x="1380" y="837" width="5" height="37" rx="2" fill="#0d0820"/>
+  </g>
+
+  <!-- ═══ HAZE / FOG NEAR STAGE ═══ -->
+  <rect x="0" y="600" width="1440" height="300" fill="url(#stageGlow)" opacity="0.4" filter="url(#blur)"/>
+
+  <!-- Subtle horizontal haze band mid-scene -->
+  <rect x="0" y="500" width="1440" height="120" fill="#2a0850" opacity="0.15" filter="url(#blur)"/>
+
+  <!-- ═══ LIGHT STREAKS / LENS FLARES ═══ -->
+  <g opacity="0.6" filter="url(#softBlur)">
+    <line x1="160" y1="28" x2="380" y2="900" stroke="#ff60c0" stroke-width="1.5" opacity="0.3"/>
+    <line x1="480" y1="28" x2="590" y2="900" stroke="#c040ff" stroke-width="1" opacity="0.25"/>
+    <line x1="720" y1="28" x2="720" y2="900" stroke="#40aaff" stroke-width="1.5" opacity="0.3"/>
+    <line x1="960" y1="28" x2="860" y2="900" stroke="#ff9020" stroke-width="1" opacity="0.25"/>
+    <line x1="1200" y1="28" x2="1060" y2="900" stroke="#ff3060" stroke-width="1.5" opacity="0.3"/>
+  </g>
+
+  <!-- Small glowing particles / bokeh -->
+  <g opacity="0.7">
+    <circle cx="200" cy="200" r="3" fill="#ff60c0" filter="url(#softBlur)"/>
+    <circle cx="420" cy="140" r="2" fill="#c040ff" filter="url(#softBlur)"/>
+    <circle cx="650" cy="180" r="4" fill="#40aaff" filter="url(#softBlur)"/>
+    <circle cx="900" cy="120" r="2.5" fill="#ff9020" filter="url(#softBlur)"/>
+    <circle cx="1100" cy="160" r="3" fill="#ff3060" filter="url(#softBlur)"/>
+    <circle cx="1300" cy="200" r="2" fill="#ff60c0" filter="url(#softBlur)"/>
+    <circle cx="320" cy="300" r="2" fill="#c040ff" filter="url(#softBlur)" opacity="0.5"/>
+    <circle cx="760" cy="260" r="2.5" fill="#40aaff" filter="url(#softBlur)" opacity="0.5"/>
+    <circle cx="1050" cy="320" r="2" fill="#ff9020" filter="url(#softBlur)" opacity="0.5"/>
+  </g>
+</svg>

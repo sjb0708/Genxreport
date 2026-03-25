@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GENX TAKEOVER – Expense Reports</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<div id="toastContainer"></div>
+
+<div id="lightbox"><button id="lightboxClose">✕</button><img id="lightboxImg" src="" alt="Receipt"></div>
+
+<div class="modal-overlay" id="cameraModal">
+  <div class="modal">
+    <div class="modal-header"><span class="modal-title">📷 Capture Receipt</span><button class="modal-close" onclick="closeModal('cameraModal')">✕</button></div>
+    <div class="modal-body">
+      <video id="cameraStream" autoplay playsinline></video><canvas id="cameraCanvas"></canvas>
+      <div style="display:flex;gap:10px;margin-top:14px;justify-content:center;">
+        <button class="btn btn-primary" onclick="capturePhoto()">📸 Capture</button>
+        <button class="btn btn-secondary" onclick="stopCamera()">Cancel</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="newReportModal">
+  <div class="modal">
+    <div class="modal-header"><span class="modal-title">✚ New Expense Report</span><button class="modal-close" onclick="closeModal('newReportModal')">✕</button></div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label>Tour Stop <span class="required">*</span></label>
+        <select id="nrTourStop" class="form-control" onchange="onTourStopSelect()">
+          <option value="">Select a tour stop…</option>
+          <option value="custom">✎ Enter custom location</option>
+        </select>
+      </div>
+      <div id="nrCustomRow" style="display:none;">
+        <div class="form-group"><label>Custom Location / Venue</label><input type="text" id="nrLocation" class="form-control" placeholder="e.g. Nashville, TN – Ryman Auditorium"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>Request Date <span class="required">*</span></label><input type="date" id="nrReqDate" class="form-control"></div>
+        <div class="form-group"><label>Event Date</label><input type="date" id="nrEventDate" class="form-control" placeholder="Auto-filled from stop"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>Submit Payment To</label><input type="text" id="nrPayTo" class="form-control" placeholder="Your name or payee"></div>
+        <div class="form-group"><label>Payment Method</label>
+          <select id="nrPayMethod" class="form-control">
+            <option value="check">Check</option><option value="direct_deposit">Direct Deposit</option>
+            <option value="cash">Cash</option><option value="zelle">Zelle</option>
+            <option value="venmo">Venmo</option><option value="cashapp">Cash App</option>
+          </select>
+        </div>
+      </div>
+      <div id="newReportMsg"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('newReportModal')">Cancel</button>
+      <button class="btn btn-primary" onclick="createReport()">Create Report →</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="editReportModal">
+  <div class="modal">
+    <div class="modal-header"><span class="modal-title">✎ Edit Report Details</span><button class="modal-close" onclick="closeModal('editReportModal')">✕</button></div>
+    <div class="modal-body">
+      <div class="form-row">
+        <div class="form-group"><label>Request Date</label><input type="date" id="erReqDate" class="form-control"></div>
+        <div class="form-group"><label>Event Date</label><input type="date" id="erEventDate" class="form-control"></div>
+      </div>
+      <div class="form-group"><label>Event Location / Venue</label><input type="text" id="erLocation" class="form-control"></div>
+      <div class="form-row">
+        <div class="form-group"><label>Submit Payment To</label><input type="text" id="erPayTo" class="form-control"></div>
+        <div class="form-group"><label>Payment Method</label>
+          <select id="erPayMethod" class="form-control">
+            <option value="check">Check</option><option value="direct_deposit">Direct Deposit</option>
+            <option value="cash">Cash</option><option value="zelle">Zelle</option>
+            <option value="venmo">Venmo</option><option value="cashapp">Cash App</option>
+          </select>
+        </div>
+      </div>
+      <div id="editReportMsg"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('editReportModal')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveReportEdit()">Save Changes</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="expenseModal">
+  <div class="modal">
+    <div class="modal-header"><span class="modal-title" id="expenseModalTitle">Add Expense</span><button class="modal-close" onclick="closeModal('expenseModal')">✕</button></div>
+    <div class="modal-body">
+      <div class="form-row">
+        <div class="form-group"><label>Vendor / Payee <span class="required">*</span></label><input type="text" id="expVendor" class="form-control" placeholder="e.g. Delta Air Lines"></div>
+        <div class="form-group"><label>Category / Purpose <span class="required">*</span></label>
+          <select id="expPurpose" class="form-control">
+            <option value="">Select category…</option>
+            <option value="Airfare">✈ Airfare</option>
+            <option value="Hotel/Lodging">🏨 Hotel / Lodging</option>
+            <option value="Transportation/Gas">🚗 Transportation / Gas</option>
+            <option value="Car Rental">🚙 Car Rental</option>
+            <option value="Food & Beverage">🍽 Food &amp; Beverage</option>
+            <option value="Parking">🅿 Parking</option>
+            <option value="Entertainment">🎭 Entertainment</option>
+            <option value="Equipment Rental">🎤 Equipment Rental</option>
+            <option value="Office Supplies">📦 Office Supplies</option>
+            <option value="Marketing/Promotion">📣 Marketing / Promotion</option>
+            <option value="Wardrobe/Costumes">👔 Wardrobe / Costumes</option>
+            <option value="Professional Services">💼 Professional Services</option>
+            <option value="Telecommunications">📱 Telecommunications</option>
+            <option value="Miscellaneous">📎 Miscellaneous</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group"><label>Amount <span class="required">*</span></label>
+        <div class="input-group"><span class="input-prefix">$</span><input type="number" id="expAmount" class="form-control" placeholder="0.00" min="0" step="0.01"></div>
+      </div>
+      <div class="form-group mb-0"><label>Comments / Notes</label><input type="text" id="expComments" class="form-control" placeholder="Optional details…"></div>
+      <div id="expenseMsg"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('expenseModal')">Cancel</button>
+      <button class="btn btn-primary" id="expenseSaveBtn" onclick="saveExpense()">Add Expense</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="uploadModal">
+  <div class="modal">
+    <div class="modal-header"><span class="modal-title">📎 Attach Receipts</span><button class="modal-close" onclick="closeModal('uploadModal')">✕</button></div>
+    <div class="modal-body">
+      <p style="font-size:13px;color:#6b7280;margin-bottom:16px;">Attaching receipts for: <strong id="uploadExpenseLabel"></strong></p>
+      <div class="drop-zone" id="dropZone" onclick="document.getElementById('fileInput').click()">
+        <div class="drop-zone-icon">📁</div>
+        <p><strong>Click to browse</strong> or drag &amp; drop files here</p>
+        <p style="margin-top:6px;font-size:12px;">JPG, PNG, PDF, HEIC up to 20MB each</p>
+      </div>
+      <input type="file" id="fileInput" multiple accept="image/*,.pdf,.heic,.heif" style="display:none">
+      <div style="margin-top:14px;display:flex;gap:10px;justify-content:center;">
+        <button class="btn btn-secondary" onclick="openCamera()">📷 Use Camera</button>
+      </div>
+      <div id="uploadProgress" style="display:none;margin-top:12px;">
+        <div style="font-size:13px;color:#6b7280;margin-bottom:6px;" id="uploadStatus">Uploading…</div>
+        <div class="progress-bar"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
+      </div>
+    </div>
+    <div class="modal-footer"><button class="btn btn-secondary" onclick="closeModal('uploadModal')">Done</button></div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="submitModal">
+  <div class="modal">
+    <div class="modal-header"><span class="modal-title">📤 Submit for Review</span><button class="modal-close" onclick="closeModal('submitModal')">✕</button></div>
+    <div class="modal-body">
+      <div class="alert alert-info" style="margin-bottom:16px;">Once submitted, you cannot edit this report. Admin will be notified.</div>
+      <div id="submitSummary"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('submitModal')">Cancel</button>
+      <button class="btn btn-primary" onclick="confirmSubmit()">Submit for Review →</button>
+    </div>
+  </div>
+</div>
+
+<!-- Admin: Reject Modal -->
+<div class="modal-overlay" id="appRejectModal">
+  <div class="modal">
+    <div class="modal-header"><span class="modal-title">✕ Reject Report</span><button class="modal-close" onclick="closeModal('appRejectModal')">✕</button></div>
+    <div class="modal-body">
+      <div class="form-group mb-0"><label>Reason for Rejection <span class="required">*</span></label><textarea id="appRejectNotes" class="form-control" rows="3" placeholder="Provide details for the submitter…"></textarea></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('appRejectModal')">Cancel</button>
+      <button class="btn btn-danger" onclick="appConfirmReject()">Reject Report</button>
+    </div>
+  </div>
+</div>
+
+<!-- Admin: Mark as Paid Modal -->
+<div class="modal-overlay" id="appPaidModal">
+  <div class="modal">
+    <div class="modal-header"><span class="modal-title">💳 Mark as Paid</span><button class="modal-close" onclick="closeModal('appPaidModal')">✕</button></div>
+    <div class="modal-body">
+      <div class="form-group mb-0"><label>Payment Notes <span style="color:#9ca3af;font-weight:400;">(optional)</span></label><textarea id="appPaidNotes" class="form-control" rows="3" placeholder="Check #, payment reference, notes…"></textarea></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('appPaidModal')">Cancel</button>
+      <button class="btn btn-primary" onclick="appConfirmPaid()">Confirm Payment</button>
+    </div>
+  </div>
+</div>
+
+<div class="app-layout">
+  <nav class="sidebar">
+    <div class="sidebar-header">
+      <img id="sidebarLogo" class="sidebar-logo" src="" alt="" style="display:none">
+      <div class="sidebar-brand" id="sidebarBrand">GENX<br>TAKEOVER</div>
+    </div>
+    <div class="sidebar-nav">
+      <div class="sidebar-section-label">My Reports</div>
+      <div class="nav-item active" onclick="showPanel('reports')"><span class="nav-icon">📋</span><span>Expense Reports</span><span class="nav-badge" id="draftBadge" style="display:none">0</span></div>
+      <div class="nav-item" onclick="openModal('newReportModal')"><span class="nav-icon">✚</span><span>New Report</span></div>
+      <div class="sidebar-section-label">Account</div>
+      <div class="nav-item" onclick="showPanel('settings')"><span class="nav-icon">⚙</span><span>Settings</span></div>
+      <div class="nav-item" id="adminLink" style="display:none" onclick="window.location.href='/admin'"><span class="nav-icon">🛡</span><span>Admin Panel</span></div>
+    </div>
+    <div class="sidebar-footer">
+      <div class="sidebar-user">
+        <div class="user-avatar" id="userAvatar">?</div>
+        <div class="user-info">
+          <div class="user-name" id="sidebarUsername">Loading…</div>
+          <div class="user-role" id="sidebarRole">—</div>
+        </div>
+        <button class="btn-logout" onclick="logout()">Out</button>
+      </div>
+    </div>
+  </nav>
+
+  <div class="main-content">
+    <div class="topbar">
+      <div class="topbar-title" id="panelTitle">Expense Reports</div>
+      <div style="display:flex;align-items:center;gap:10px;">
+        <div style="position:relative;">
+          <button id="notifBell" onclick="toggleNotifPanel()" style="background:none;border:none;cursor:pointer;font-size:20px;padding:4px 8px;border-radius:8px;transition:background 0.15s;" title="Notifications">🔔</button>
+          <span id="notifBadge" style="display:none;position:absolute;top:0;right:0;background:#dc2626;color:#fff;border-radius:50%;width:18px;height:18px;font-size:10px;font-weight:800;align-items:center;justify-content:center;"></span>
+        </div>
+        <button class="btn btn-primary btn-sm" onclick="openModal('newReportModal')">✚ New Report</button>
+      </div>
+      <!-- Notification Panel -->
+      <div id="notifPanel" style="display:none;position:absolute;top:60px;right:16px;width:360px;max-height:480px;background:#fff;border-radius:12px;box-shadow:0 8px 32px rgba(0,0,0,0.18);border:1px solid #e5e7eb;z-index:1000;overflow:hidden;">
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid #e5e7eb;">
+          <strong style="font-size:14px;">Notifications</strong>
+          <button onclick="markAllRead()" style="background:none;border:none;cursor:pointer;font-size:12px;color:#1a3f8c;font-weight:600;">Mark all read</button>
+        </div>
+        <div id="notifList" style="overflow-y:auto;max-height:400px;"></div>
+      </div>
+    </div>
+    <div class="page-body">
+
+      <div class="panel active" id="panel-reports">
+        <div id="reportsContainer">
+          <div id="reportsSkeleton">
+            <div class="skeleton skeleton-title" style="width:40%;margin-bottom:20px;height:18px;"></div>
+            <div class="skeleton" style="height:80px;border-radius:12px;margin-bottom:10px;"></div>
+            <div class="skeleton" style="height:80px;border-radius:12px;margin-bottom:10px;"></div>
+            <div class="skeleton" style="height:80px;border-radius:12px;"></div>
+          </div>
+          <div id="reportsList" style="display:none;"></div>
+        </div>
+        <div id="reportDetail" style="display:none;margin-top:20px;">
+          <div class="card">
+            <div class="card-header" id="reportDetailHeader">
+              <div>
+                <div class="card-title" id="detailLocation">—</div>
+                <div class="card-subtitle" id="detailMeta">—</div>
+              </div>
+              <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+                <span class="badge" id="detailStatus"></span>
+                <a id="detailPdfBtn" href="#" target="_blank" class="action-btn action-btn-blue">📄 PDF</a>
+                <button class="action-btn action-btn-gray" id="detailEditBtn" onclick="openEditReport()">✎ Edit</button>
+                <button class="btn btn-primary btn-sm" id="detailSubmitBtn" onclick="openSubmitModal()">📤 Submit</button>
+                <button class="btn btn-danger btn-sm" id="detailDeleteBtn" onclick="deleteReport()">🗑</button>
+                <!-- Admin-only status actions -->
+                <div id="adminStatusActions" style="display:none;gap:6px;align-items:center;flex-wrap:wrap;"></div>
+              </div>
+            </div>
+            <div class="card-body">
+              <div id="adminNotesBanner" style="display:none;" class="alert alert-warning mb-2"><strong>Admin Notes:</strong> <span id="adminNotesText"></span></div>
+              <div class="section-header">
+                <div><div class="section-title">Expense Items</div><div class="section-subtitle" id="detailExpCount">—</div></div>
+                <button class="btn btn-ghost btn-sm" id="addExpenseBtn" onclick="openAddExpense()">+ Add Expense</button>
+              </div>
+              <div id="expensesList"></div>
+              <div style="display:flex;justify-content:flex-end;margin-top:16px;padding-top:16px;border-top:2px solid #e5e7eb;">
+                <div style="text-align:right;">
+                  <div style="font-size:12px;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:0.5px;">Total Reimbursement Request</div>
+                  <div style="font-size:28px;font-weight:800;color:#1a3f8c;" id="detailTotal">$0.00</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel" id="panel-settings">
+        <div class="section-header">
+          <div><div class="section-title">Account Settings</div><div class="section-subtitle">Manage your profile and security</div></div>
+        </div>
+        <div class="card" style="max-width:520px;">
+          <div class="card-header"><div class="card-title">Change Password</div></div>
+          <div class="card-body">
+            <div class="form-group"><label>Current Password</label><input type="password" id="pwCurrent" class="form-control" placeholder="Current password"></div>
+            <div class="form-group"><label>New Password</label><input type="password" id="pwNew" class="form-control" placeholder="At least 6 characters"></div>
+            <div class="form-group mb-0"><label>Confirm New Password</label><input type="password" id="pwConfirm" class="form-control" placeholder="Repeat new password"></div>
+            <div id="pwMsg"></div>
+          </div>
+          <div class="modal-footer" style="border-top:1px solid #e5e7eb;">
+            <button class="btn btn-primary" onclick="changePassword()">Update Password</button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script src="/app.js"></script>
+</body>
+</html>

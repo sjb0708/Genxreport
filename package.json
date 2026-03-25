@@ -1,0 +1,30 @@
+{
+  "name": "genx-expense-report",
+  "version": "2.0.0",
+  "description": "GENX TAKEOVER Comedy Tour – Expense Report System",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js",
+    "seed": "node seed.js"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "keywords": [],
+  "author": "GENX Takeover",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "@neondatabase/serverless": "^0.10.4",
+    "bcryptjs": "^3.0.3",
+    "cookie-parser": "^1.4.7",
+    "exceljs": "^4.4.0",
+    "express": "^5.2.1",
+    "jsonwebtoken": "^9.0.3",
+    "multer": "^2.1.1",
+    "nodemailer": "^8.0.4",
+    "pdfkit": "^0.15.2",
+    "uuid": "^13.0.0"
+  }
+}
