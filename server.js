@@ -1,16 +1,22 @@
 'use strict';
-const express      = require('express');
-const { neon }     = require('@neondatabase/serverless');
-const multer       = require('multer');
-const path         = require('path');
-const fs           = require('fs');
-const { v4: uuidv4 } = require('uuid');
-const bcrypt       = require('bcryptjs');
-const jwt          = require('jsonwebtoken');
-const cookieParser = require('cookie-parser');
-const nodemailer   = require('nodemailer');
-const ExcelJS      = require('exceljs');
-const PDFDocument  = require('pdfkit');
+let express, neon, multer, path, fs, uuidv4, bcrypt, jwt, cookieParser, nodemailer, ExcelJS, PDFDocument;
+try {
+  express      = require('express');
+  ({ neon }    = require('@neondatabase/serverless'));
+  multer       = require('multer');
+  path         = require('path');
+  fs           = require('fs');
+  ({ v4: uuidv4 } = require('uuid'));
+  bcrypt       = require('bcryptjs');
+  jwt          = require('jsonwebtoken');
+  cookieParser = require('cookie-parser');
+  nodemailer   = require('nodemailer');
+  ExcelJS      = require('exceljs');
+  PDFDocument  = require('pdfkit');
+} catch(e) {
+  console.error('MODULE_LOAD_ERROR:', e.message, e.stack);
+  throw e;
+}
 
 const app  = express();
 const PORT = process.env.PORT || 3000;
