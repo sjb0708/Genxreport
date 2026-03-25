@@ -9,8 +9,9 @@ const bcrypt       = require('bcryptjs');
 const jwt          = require('jsonwebtoken');
 const cookieParser = require('cookie-parser');
 const nodemailer   = require('nodemailer');
-const ExcelJS      = require('exceljs');
-const PDFDocument  = require('pdfkit');
+// Lazy-load heavy modules to avoid serverless cold-start crashes
+function getExcelJS() { return require('exceljs'); }
+function getPDFDocument() { return require('pdfkit'); }
 
 const app  = express();
 const PORT = process.env.PORT || 3000;
@@ -889,6 +890,7 @@ app.get('/api/export/csv', requireAdmin, async (req, res) => {
 
 app.get('/api/export/xlsx', requireAdmin, async (req, res) => {
   const reports = await getReportsForExport(req.query, req.user.id);
+  const ExcelJS = getExcelJS();
   const wb = new ExcelJS.Workbook();
   wb.creator = 'GENX Takeover Expense System';
   const ws = wb.addWorksheet('Expense Report');
@@ -978,6 +980,7 @@ function findLogo() {
 async function generatePDF(report) {
   return new Promise((resolve, reject) => {
     try {
+      const PDFDocument = getPDFDocument();
       const doc  = new PDFDocument({ size: 'LETTER', margins: { top: 0, bottom: 40, left: 50, right: 50 }, bufferPages: true });
       const chunks = [];
       doc.on('data', c => chunks.push(c));
