@@ -340,7 +340,7 @@ app.get('/api/admin/reports', requireAdmin, async (req, res) => {
                      LEFT JOIN users u ON u.id = r.user_id
                      LEFT JOIN expenses e ON e.report_id = r.id
                      WHERE r.user_id=${userId} AND r.status=${status} AND r.event_date>=${from} AND r.event_date<=${to}
-                     GROUP BY r.id ORDER BY r.created_at DESC`;
+                     GROUP BY r.id, u.username, u.email ORDER BY r.created_at DESC`;
   } else if (userId && status && from) {
     rows = await sql`SELECT r.*, u.username, u.email,
                        COALESCE(SUM(e.amount),0) as total,
@@ -349,7 +349,7 @@ app.get('/api/admin/reports', requireAdmin, async (req, res) => {
                      LEFT JOIN users u ON u.id = r.user_id
                      LEFT JOIN expenses e ON e.report_id = r.id
                      WHERE r.user_id=${userId} AND r.status=${status} AND r.event_date>=${from}
-                     GROUP BY r.id ORDER BY r.created_at DESC`;
+                     GROUP BY r.id, u.username, u.email ORDER BY r.created_at DESC`;
   } else if (userId && status && to) {
     rows = await sql`SELECT r.*, u.username, u.email,
                        COALESCE(SUM(e.amount),0) as total,
@@ -358,7 +358,7 @@ app.get('/api/admin/reports', requireAdmin, async (req, res) => {
                      LEFT JOIN users u ON u.id = r.user_id
                      LEFT JOIN expenses e ON e.report_id = r.id
                      WHERE r.user_id=${userId} AND r.status=${status} AND r.event_date<=${to}
-                     GROUP BY r.id ORDER BY r.created_at DESC`;
+                     GROUP BY r.id, u.username, u.email ORDER BY r.created_at DESC`;
   } else if (userId && from && to) {
     rows = await sql`SELECT r.*, u.username, u.email,
                        COALESCE(SUM(e.amount),0) as total,
@@ -367,7 +367,7 @@ app.get('/api/admin/reports', requireAdmin, async (req, res) => {
                      LEFT JOIN users u ON u.id = r.user_id
                      LEFT JOIN expenses e ON e.report_id = r.id
                      WHERE r.user_id=${userId} AND r.event_date>=${from} AND r.event_date<=${to}
-                     GROUP BY r.id ORDER BY r.created_at DESC`;
+                     GROUP BY r.id, u.username, u.email ORDER BY r.created_at DESC`;
   } else if (status && from && to) {
     rows = await sql`SELECT r.*, u.username, u.email,
                        COALESCE(SUM(e.amount),0) as total,
@@ -376,7 +376,7 @@ app.get('/api/admin/reports', requireAdmin, async (req, res) => {
                      LEFT JOIN users u ON u.id = r.user_id
                      LEFT JOIN expenses e ON e.report_id = r.id
                      WHERE r.status=${status} AND r.event_date>=${from} AND r.event_date<=${to}
-                     GROUP BY r.id ORDER BY r.created_at DESC`;
+                     GROUP BY r.id, u.username, u.email ORDER BY r.created_at DESC`;
   } else if (userId && status) {
     rows = await sql`SELECT r.*, u.username, u.email,
                        COALESCE(SUM(e.amount),0) as total,
@@ -385,7 +385,7 @@ app.get('/api/admin/reports', requireAdmin, async (req, res) => {
                      LEFT JOIN users u ON u.id = r.user_id
                      LEFT JOIN expenses e ON e.report_id = r.id
                      WHERE r.user_id=${userId} AND r.status=${status}
-                     GROUP BY r.id ORDER BY r.created_at DESC`;
+                     GROUP BY r.id, u.username, u.email ORDER BY r.created_at DESC`;
   } else if (userId && from) {
     rows = await sql`SELECT r.*, u.username, u.email,
                        COALESCE(SUM(e.amount),0) as total,
@@ -394,7 +394,7 @@ app.get('/api/admin/reports', requireAdmin, async (req, res) => {
                      LEFT JOIN users u ON u.id = r.user_id
                      LEFT JOIN expenses e ON e.report_id = r.id
                      WHERE r.user_id=${userId} AND r.event_date>=${from}
-                     GROUP BY r.id ORDER BY r.created_at DESC`;
+                     GROUP BY r.id, u.username, u.email ORDER BY r.created_at DESC`;
   } else if (userId && to) {
     rows = await sql`SELECT r.*, u.username, u.email,
                        COALESCE(SUM(e.amount),0) as total,
@@ -403,7 +403,7 @@ app.get('/api/admin/reports', requireAdmin, async (req, res) => {
                      LEFT JOIN users u ON u.id = r.user_id
                      LEFT JOIN expenses e ON e.report_id = r.id
                      WHERE r.user_id=${userId} AND r.event_date<=${to}
-                     GROUP BY r.id ORDER BY r.created_at DESC`;
+                     GROUP BY r.id, u.username, u.email ORDER BY r.created_at DESC`;
   } else if (status && from) {
     rows = await sql`SELECT r.*, u.username, u.email,
                        COALESCE(SUM(e.amount),0) as total,
@@ -412,7 +412,7 @@ app.get('/api/admin/reports', requireAdmin, async (req, res) => {
                      LEFT JOIN users u ON u.id = r.user_id
                      LEFT JOIN expenses e ON e.report_id = r.id
                      WHERE r.status=${status} AND r.event_date>=${from}
-                     GROUP BY r.id ORDER BY r.created_at DESC`;
+                     GROUP BY r.id, u.username, u.email ORDER BY r.created_at DESC`;
   } else if (status && to) {
     rows = await sql`SELECT r.*, u.username, u.email,
                        COALESCE(SUM(e.amount),0) as total,
@@ -421,7 +421,7 @@ app.get('/api/admin/reports', requireAdmin, async (req, res) => {
                      LEFT JOIN users u ON u.id = r.user_id
                      LEFT JOIN expenses e ON e.report_id = r.id
                      WHERE r.status=${status} AND r.event_date<=${to}
-                     GROUP BY r.id ORDER BY r.created_at DESC`;
+                     GROUP BY r.id, u.username, u.email ORDER BY r.created_at DESC`;
   } else if (from && to) {
     rows = await sql`SELECT r.*, u.username, u.email,
                        COALESCE(SUM(e.amount),0) as total,
@@ -430,7 +430,7 @@ app.get('/api/admin/reports', requireAdmin, async (req, res) => {
                      LEFT JOIN users u ON u.id = r.user_id
                      LEFT JOIN expenses e ON e.report_id = r.id
                      WHERE r.event_date>=${from} AND r.event_date<=${to}
-                     GROUP BY r.id ORDER BY r.created_at DESC`;
+                     GROUP BY r.id, u.username, u.email ORDER BY r.created_at DESC`;
   } else if (userId) {
     rows = await sql`SELECT r.*, u.username, u.email,
                        COALESCE(SUM(e.amount),0) as total,
@@ -439,7 +439,7 @@ app.get('/api/admin/reports', requireAdmin, async (req, res) => {
                      LEFT JOIN users u ON u.id = r.user_id
                      LEFT JOIN expenses e ON e.report_id = r.id
                      WHERE r.user_id=${userId}
-                     GROUP BY r.id ORDER BY r.created_at DESC`;
+                     GROUP BY r.id, u.username, u.email ORDER BY r.created_at DESC`;
   } else if (status) {
     rows = await sql`SELECT r.*, u.username, u.email,
                        COALESCE(SUM(e.amount),0) as total,
@@ -448,7 +448,7 @@ app.get('/api/admin/reports', requireAdmin, async (req, res) => {
                      LEFT JOIN users u ON u.id = r.user_id
                      LEFT JOIN expenses e ON e.report_id = r.id
                      WHERE r.status=${status}
-                     GROUP BY r.id ORDER BY r.created_at DESC`;
+                     GROUP BY r.id, u.username, u.email ORDER BY r.created_at DESC`;
   } else if (from) {
     rows = await sql`SELECT r.*, u.username, u.email,
                        COALESCE(SUM(e.amount),0) as total,
@@ -457,7 +457,7 @@ app.get('/api/admin/reports', requireAdmin, async (req, res) => {
                      LEFT JOIN users u ON u.id = r.user_id
                      LEFT JOIN expenses e ON e.report_id = r.id
                      WHERE r.event_date>=${from}
-                     GROUP BY r.id ORDER BY r.created_at DESC`;
+                     GROUP BY r.id, u.username, u.email ORDER BY r.created_at DESC`;
   } else if (to) {
     rows = await sql`SELECT r.*, u.username, u.email,
                        COALESCE(SUM(e.amount),0) as total,
@@ -466,7 +466,7 @@ app.get('/api/admin/reports', requireAdmin, async (req, res) => {
                      LEFT JOIN users u ON u.id = r.user_id
                      LEFT JOIN expenses e ON e.report_id = r.id
                      WHERE r.event_date<=${to}
-                     GROUP BY r.id ORDER BY r.created_at DESC`;
+                     GROUP BY r.id, u.username, u.email ORDER BY r.created_at DESC`;
   } else {
     rows = await sql`SELECT r.*, u.username, u.email,
                        COALESCE(SUM(e.amount),0) as total,
@@ -474,7 +474,7 @@ app.get('/api/admin/reports', requireAdmin, async (req, res) => {
                      FROM reports r
                      LEFT JOIN users u ON u.id = r.user_id
                      LEFT JOIN expenses e ON e.report_id = r.id
-                     GROUP BY r.id ORDER BY r.created_at DESC`;
+                     GROUP BY r.id, u.username, u.email ORDER BY r.created_at DESC`;
   }
   res.json(rows);
 });
@@ -491,7 +491,7 @@ app.get('/api/reports', requireLogin, async (req, res) => {
                      FROM reports r
                      LEFT JOIN users u ON u.id = r.user_id
                      LEFT JOIN expenses e ON e.report_id = r.id
-                     GROUP BY r.id ORDER BY r.created_at DESC`;
+                     GROUP BY r.id, u.username, u.email ORDER BY r.created_at DESC`;
   } else {
     rows = await sql`SELECT r.*, u.username,
                        COALESCE(SUM(e.amount),0) as total,
@@ -500,7 +500,7 @@ app.get('/api/reports', requireLogin, async (req, res) => {
                      LEFT JOIN users u ON u.id = r.user_id
                      LEFT JOIN expenses e ON e.report_id = r.id
                      WHERE r.user_id=${req.user.id}
-                     GROUP BY r.id ORDER BY r.created_at DESC`;
+                     GROUP BY r.id, u.username, u.email ORDER BY r.created_at DESC`;
   }
   res.json(rows);
 });
