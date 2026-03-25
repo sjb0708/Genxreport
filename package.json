@@ -17,7 +17,7 @@
   "type": "commonjs",
   "dependencies": {
     "@neondatabase/serverless": "^0.10.4",
-    "bcryptjs": "^3.0.3",
+    "bcryptjs": "^2.4.3",
     "cookie-parser": "^1.4.7",
     "exceljs": "^4.4.0",
     "express": "^5.2.1",

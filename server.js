@@ -39,7 +39,7 @@ if (!fs.existsSync(UPLOAD_DIR)) fs.mkdirSync(UPLOAD_DIR, { recursive: true });
 // Strip channel_binding param — not supported by @neondatabase/serverless
 const dbUrl = (process.env.DATABASE_URL || '').replace(/[&?]channel_binding=[^&]*/g, '');
 if (!dbUrl) { console.error('FATAL: DATABASE_URL is not set'); }
-const sql = neon(dbUrl || 'postgresql://localhost/placeholder');
+const sql = neon(dbUrl || 'postgresql://user:pass@host.neon.tech/dbname');
 
 async function initDB() {
   await sql`
