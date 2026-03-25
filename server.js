@@ -20,12 +20,14 @@ const JWT_SECRET = process.env.JWT_SECRET || 'genx-takeover-secret-jwt-2024';
 
 // ─── Directories ───────────────────────────────────────────────────────────
 
-const UPLOAD_DIR = process.env.UPLOAD_DIR || path.join(__dir, 'uploads');
+const UPLOAD_DIR = process.env.UPLOAD_DIR || (process.env.VERCEL ? '/tmp/uploads' : path.join(__dir, 'uploads'));
 if (!fs.existsSync(UPLOAD_DIR)) fs.mkdirSync(UPLOAD_DIR, { recursive: true });
 
 // ─── Database ──────────────────────────────────────────────────────────────
 
-const sql = neon(process.env.DATABASE_URL);
+// Strip channel_binding param — not supported by @neondatabase/serverless
+const dbUrl = (process.env.DATABASE_URL || '').replace(/[&?]channel_binding=[^&]*/g, '');
+const sql = neon(dbUrl);
 
 async function initDB() {
   await sql`
