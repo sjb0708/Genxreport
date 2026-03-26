@@ -598,6 +598,7 @@ app.post('/api/notifications/:id/read', requireLogin, async (req, res) => {
 });
 
 app.post('/api/reports/:id/approve', requireAdmin, async (req, res) => {
+  try {
   const { notes } = req.body;
   const report = (await sql`SELECT r.*, u.username, u.email FROM reports r LEFT JOIN users u ON u.id=r.user_id WHERE r.id=${req.params.id}`)[0];
   if (!report) return res.status(404).json({ error: 'Not found' });
@@ -609,9 +610,11 @@ app.post('/api/reports/:id/approve', requireAdmin, async (req, res) => {
     createNotification(report.user_id, msg, req.params.id, 'success');
     sendStatusEmail(report, 'approved', msg, notes).catch(e => console.error('Email error:', e));
   });
+  } catch(e) { console.error('Approve error:', e); res.status(500).json({ error: e.message }); }
 });
 
 app.post('/api/reports/:id/reject', requireAdmin, async (req, res) => {
+  try {
   const { notes } = req.body;
   if (!notes) return res.status(400).json({ error: 'Please provide rejection notes' });
   const report = (await sql`SELECT r.*, u.username, u.email FROM reports r LEFT JOIN users u ON u.id=r.user_id WHERE r.id=${req.params.id}`)[0];
@@ -623,6 +626,7 @@ app.post('/api/reports/:id/reject', requireAdmin, async (req, res) => {
     createNotification(report.user_id, msg, req.params.id, 'error');
     sendStatusEmail(report, 'rejected', msg, notes).catch(e => console.error('Email error:', e));
   });
+  } catch(e) { console.error('Reject error:', e); res.status(500).json({ error: e.message }); }
 });
 
 // Reopen (admin) – set back to draft

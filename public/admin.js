@@ -298,7 +298,7 @@ async function confirmReject() {
   const res = await fetch(`/api/reports/${rejectTargetId}/reject`, {
     method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({notes})
   });
-  if (!res.ok) { toast('Reject failed.', 'error'); return; }
+  if (!res.ok) { const d = await res.json().catch(()=>({})); toast('Reject failed: ' + (d.error||res.status), 'error'); return; }
   closeModal('rejectModal');
   closeModal('reportDetailModal');
   toast('Report rejected.', 'warning');
@@ -446,7 +446,7 @@ async function quickApproveModal(id) {
   const res = await fetch(`/api/reports/${id}/approve`, {
     method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({notes:''})
   });
-  if (!res.ok) { toast('Failed.', 'error'); return; }
+  if (!res.ok) { const d = await res.json().catch(()=>({})); toast('Approve failed: ' + (d.error||res.status), 'error'); return; }
   toast('Report approved! ✓', 'success');
   openReportDetail(id); loadAllReports(); loadDashboard();
 }
