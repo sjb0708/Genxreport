@@ -346,67 +346,64 @@ app.delete('/api/tour-stops/:id', requireAdmin, async (req, res) => {
 
 // Drafts not updated in 5+ days
 app.get('/api/admin/analytics', requireAdmin, async (req, res) => {
+  try {
   const { user_id, category, status, from, to } = req.query;
 
-  // Build dynamic WHERE clauses
-  let conditions = [`r.status != 'draft'`];
-  if (user_id)  conditions.push(`r.user_id = '${user_id.replace(/'/g,"''")}'`);
-  if (status)   conditions.push(`r.status = '${status.replace(/'/g,"''")}'`);
-  if (from)     conditions.push(`r.event_date >= '${from.replace(/'/g,"''")}'`);
-  if (to)       conditions.push(`r.event_date <= '${to.replace(/'/g,"''")}'`);
-  if (category) conditions.push(`e.purpose = '${category.replace(/'/g,"''")}'`);
+  // Fetch all expenses joined with reports+users, then filter in JS
+  // (Neon tagged-template client doesn't support .unsafe() for dynamic WHERE)
+  let rows = await sql`
+    SELECT e.id, e.vendor, e.purpose, e.amount, e.comments, e.sort_order,
+           r.id as report_id, r.event_location, r.event_date, r.status, r.user_id,
+           u.username
+    FROM expenses e
+    JOIN reports r ON r.id = e.report_id
+    JOIN users u ON u.id = r.user_id
+    WHERE r.status != 'draft'
+    ORDER BY r.event_date DESC, e.sort_order ASC
+  `;
 
-  const where = conditions.join(' AND ');
+  // Apply filters in JS
+  if (user_id)  rows = rows.filter(r => r.user_id === user_id);
+  if (status)   rows = rows.filter(r => r.status === status);
+  if (from)     rows = rows.filter(r => r.event_date >= from);
+  if (to)       rows = rows.filter(r => r.event_date <= to);
+  if (category) rows = rows.filter(r => r.purpose === category);
 
-  const [byCategory, byUser, summary, detail] = await Promise.all([
-    sql.unsafe(`
-      SELECT e.purpose as category,
-             COUNT(e.id)::int as count,
-             COALESCE(SUM(e.amount),0)::float as total
-      FROM expenses e
-      JOIN reports r ON r.id = e.report_id
-      WHERE ${where}
-      GROUP BY e.purpose
-      ORDER BY total DESC
-    `),
-    sql.unsafe(`
-      SELECT u.username,
-             COUNT(DISTINCT r.id)::int as report_count,
-             COUNT(e.id)::int as expense_count,
-             COALESCE(SUM(e.amount),0)::float as total
-      FROM expenses e
-      JOIN reports r ON r.id = e.report_id
-      JOIN users u ON u.id = r.user_id
-      WHERE ${where}
-      GROUP BY u.username
-      ORDER BY total DESC
-    `),
-    sql.unsafe(`
-      SELECT COUNT(DISTINCT r.id)::int as report_count,
-             COUNT(e.id)::int as expense_count,
-             COALESCE(SUM(e.amount),0)::float as grand_total
-      FROM expenses e
-      JOIN reports r ON r.id = e.report_id
-      WHERE ${where}
-    `),
-    sql.unsafe(`
-      SELECT u.username, r.event_location, r.event_date, r.status,
-             e.vendor, e.purpose, e.amount::float, e.comments
-      FROM expenses e
-      JOIN reports r ON r.id = e.report_id
-      JOIN users u ON u.id = r.user_id
-      WHERE ${where}
-      ORDER BY r.event_date DESC, e.sort_order ASC
-      LIMIT 200
-    `)
-  ]);
-
-  res.json({
-    byCategory,
-    byUser,
-    summary: summary[0] || { report_count: 0, expense_count: 0, grand_total: 0 },
-    detail
+  // Aggregate by category
+  const catMap = {};
+  rows.forEach(r => {
+    const k = r.purpose || 'Uncategorized';
+    if (!catMap[k]) catMap[k] = { category: k, count: 0, total: 0 };
+    catMap[k].count++;
+    catMap[k].total += parseFloat(r.amount || 0);
   });
+  const byCategory = Object.values(catMap).sort((a, b) => b.total - a.total);
+
+  // Aggregate by user
+  const userMap = {};
+  const reportsByUser = {};
+  rows.forEach(r => {
+    if (!userMap[r.username]) { userMap[r.username] = { username: r.username, report_count: 0, expense_count: 0, total: 0 }; reportsByUser[r.username] = new Set(); }
+    reportsByUser[r.username].add(r.report_id);
+    userMap[r.username].expense_count++;
+    userMap[r.username].total += parseFloat(r.amount || 0);
+  });
+  Object.keys(userMap).forEach(u => { userMap[u].report_count = reportsByUser[u].size; });
+  const byUser = Object.values(userMap).sort((a, b) => b.total - a.total);
+
+  // Summary
+  const reportIds = new Set(rows.map(r => r.report_id));
+  const grandTotal = rows.reduce((s, r) => s + parseFloat(r.amount || 0), 0);
+  const summary = { report_count: reportIds.size, expense_count: rows.length, grand_total: grandTotal };
+
+  // Detail (cap at 200)
+  const detail = rows.slice(0, 200).map(r => ({
+    username: r.username, event_location: r.event_location, event_date: r.event_date,
+    status: r.status, vendor: r.vendor, purpose: r.purpose, amount: parseFloat(r.amount || 0), comments: r.comments
+  }));
+
+  res.json({ byCategory, byUser, summary, detail });
+  } catch(e) { console.error('Analytics error:', e); res.status(500).json({ error: e.message }); }
 });
 
 app.get('/api/admin/stale-drafts', requireAdmin, async (req, res) => {
