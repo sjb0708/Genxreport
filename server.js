@@ -410,14 +410,15 @@ app.get('/api/admin/analytics', requireAdmin, async (req, res) => {
   const budget = budgetRaw ? JSON.parse(budgetRaw) : { total_per_show: 0, categories: {} };
   const globalShowBudget = parseFloat(budget.total_per_show) || 0;
 
-  // Build per-venue budget lookup from tour_stops
+  // Build per-venue budget lookup from tour_stops (normalized for case/whitespace tolerance)
   const tourStops = await sql`SELECT venue, budget FROM tour_stops`;
+  const norm = s => (s || '').trim().toLowerCase();
   const stopBudgetMap = {};
-  tourStops.forEach(s => { stopBudgetMap[s.venue] = parseFloat(s.budget) || 0; });
+  tourStops.forEach(s => { stopBudgetMap[norm(s.venue)] = parseFloat(s.budget) || 0; });
 
   const byVenue = Object.values(venueMap)
     .map(v => {
-      const perShowBudget = stopBudgetMap[v.venue] > 0 ? stopBudgetMap[v.venue] : globalShowBudget;
+      const perShowBudget = stopBudgetMap[norm(v.venue)] > 0 ? stopBudgetMap[norm(v.venue)] : globalShowBudget;
       return { venue: v.venue, date: v.date, people: v.people.size, report_count: v.report_ids.size, total: v.total, budget: perShowBudget };
     })
     .sort((a, b) => b.total - a.total);

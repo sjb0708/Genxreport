@@ -667,7 +667,9 @@ async function loadAnalytics() {
   byCategory.forEach(r => {
     const cb = budget?.categories?.[r.category] || 0;
     if (cb > 0 && r.total > cb) {
-      flags.push({ level: 'red', msg: `<strong>${esc(r.category)}</strong> is over the category budget — spent ${fmt(r.total)} vs ${fmt(cb)} limit` });
+      flags.push({ level: 'red', msg: `<strong>${esc(r.category)}</strong> is over the category budget — spent ${fmt(r.total)} vs ${fmt(cb)} limit (over by ${fmt(r.total - cb)})` });
+    } else if (cb > 0 && r.total > cb * venueWarnPct) {
+      flags.push({ level: 'yellow', msg: `<strong>${esc(r.category)}</strong> is near the category budget — spent ${fmt(r.total)} of ${fmt(cb)} (${((r.total/cb)*100).toFixed(0)}%)` });
     }
   });
 
