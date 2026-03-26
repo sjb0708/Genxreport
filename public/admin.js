@@ -141,7 +141,7 @@ function showPanel(name) {
   document.querySelectorAll('.nav-item[data-panel]').forEach(i => i.classList.remove('active'));
   document.getElementById('panel-' + name)?.classList.add('active');
   document.querySelector(`.nav-item[data-panel="${name}"]`)?.classList.add('active');
-  const titles = { dashboard:'Dashboard', reports:'All Reports', export:'Export Data', users:'Users', settings:'Settings', tourstops:'Tour Stop Schedule' };
+  const titles = { dashboard:'Dashboard', reports:'All Reports', analytics:'Analytics', export:'Export Data', users:'Users', settings:'Settings', tourstops:'Tour Stop Schedule' };
   document.getElementById('panelTitle').textContent = titles[name] || name;
   closeSidebar();
 
@@ -159,6 +159,7 @@ function showPanel(name) {
   }
   if (name === 'users')     loadUsers();
   if (name === 'settings')  { loadSmtpSettings(); loadAdminNotifPref(); }
+  if (name === 'analytics') loadAnalytics();
   if (name === 'export')    loadUserFilter('exportUser');
   if (name === 'tourstops') loadTourStops();
 }
@@ -585,6 +586,90 @@ function statusLabel(s) {
 }
 
 // ─── Users ─────────────────────────────────────────────────
+
+// ─── Analytics ────────────────────────────────────────────────────────────
+
+async function loadAnalytics() {
+  // Populate user dropdown from allUsers if available
+  const userSel = document.getElementById('analyticsUser');
+  if (userSel && userSel.options.length === 1 && allUsers.length) {
+    allUsers.forEach(u => {
+      const o = document.createElement('option');
+      o.value = u.id; o.textContent = u.username;
+      userSel.appendChild(o);
+    });
+  }
+
+  const user_id  = document.getElementById('analyticsUser')?.value || '';
+  const category = document.getElementById('analyticsCategory')?.value || '';
+  const status   = document.getElementById('analyticsStatus')?.value || '';
+  const from     = document.getElementById('analyticsFrom')?.value || '';
+  const to       = document.getElementById('analyticsTo')?.value || '';
+
+  const params = new URLSearchParams();
+  if (user_id)  params.set('user_id',  user_id);
+  if (category) params.set('category', category);
+  if (status)   params.set('status',   status);
+  if (from)     params.set('from',     from);
+  if (to)       params.set('to',       to);
+
+  const res = await fetch('/api/admin/analytics?' + params.toString());
+  if (!res.ok) { toast('Analytics failed to load.', 'error'); return; }
+  const { byCategory, byUser, summary, detail } = await res.json();
+
+  const fmt = n => '$' + parseFloat(n||0).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+  const grandTotal = summary.grand_total || 0;
+
+  // Summary cards
+  document.getElementById('anStatTotal').textContent    = fmt(grandTotal);
+  document.getElementById('anStatReports').textContent  = summary.report_count;
+  document.getElementById('anStatExpenses').textContent = summary.expense_count;
+  const avg = summary.report_count > 0 ? grandTotal / summary.report_count : 0;
+  document.getElementById('anStatAvg').textContent      = fmt(avg);
+
+  // Category table
+  document.getElementById('anCategoryBody').innerHTML = byCategory.length
+    ? byCategory.map(r => {
+        const pct = grandTotal > 0 ? ((r.total / grandTotal) * 100).toFixed(1) : '0.0';
+        const bar = `<div style="display:inline-block;width:${Math.round(pct)}%;max-width:60px;height:6px;background:#1a3f8c;border-radius:3px;margin-right:6px;vertical-align:middle;"></div>`;
+        return `<tr>
+          <td><strong>${esc(r.category||'Uncategorized')}</strong></td>
+          <td style="text-align:right;color:#6b7280;">${r.count}</td>
+          <td style="text-align:right;font-weight:700;">${fmt(r.total)}</td>
+          <td style="text-align:right;white-space:nowrap;">${bar}${pct}%</td>
+        </tr>`;
+      }).join('') + `<tr style="border-top:2px solid #e5e7eb;background:#f9fafb;">
+          <td><strong>TOTAL</strong></td>
+          <td style="text-align:right;color:#6b7280;">${summary.expense_count}</td>
+          <td style="text-align:right;font-weight:700;color:#1a3f8c;">${fmt(grandTotal)}</td>
+          <td></td>
+        </tr>`
+    : `<tr><td colspan="4" class="table-empty"><div class="table-empty-icon">📊</div><p>No data for selected filters</p></td></tr>`;
+
+  // User table
+  document.getElementById('anUserBody').innerHTML = byUser.length
+    ? byUser.map(r => `<tr>
+        <td><strong>${esc(r.username)}</strong></td>
+        <td style="text-align:right;color:#6b7280;">${r.report_count}</td>
+        <td style="text-align:right;color:#6b7280;">${r.expense_count}</td>
+        <td style="text-align:right;font-weight:700;">${fmt(r.total)}</td>
+      </tr>`).join('')
+    : `<tr><td colspan="4" class="table-empty"><div class="table-empty-icon">👥</div><p>No data</p></td></tr>`;
+
+  // Detail table
+  document.getElementById('anDetailSubtitle').textContent =
+    `${detail.length} line item${detail.length !== 1 ? 's' : ''}${detail.length === 200 ? ' (showing first 200)' : ''}`;
+  document.getElementById('anDetailBody').innerHTML = detail.length
+    ? detail.map(e => `<tr>
+        <td>${esc(e.username)}</td>
+        <td>${esc(e.event_location||'—')}</td>
+        <td>${e.event_date||'—'}</td>
+        <td>${esc(e.vendor||'—')}</td>
+        <td><span class="badge badge-${e.status}" style="font-size:10px;">${esc(e.purpose||'—')}</span></td>
+        <td style="text-align:right;font-weight:700;">${fmt(e.amount)}</td>
+      </tr>`).join('')
+    : `<tr><td colspan="6" class="table-empty"><div class="table-empty-icon">🧾</div><p>No expenses match your filters</p></td></tr>`;
+}
 
 async function loadUsers() {
   const res = await fetch('/api/admin/users');

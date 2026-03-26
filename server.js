@@ -345,6 +345,70 @@ app.delete('/api/tour-stops/:id', requireAdmin, async (req, res) => {
 // ─── Stale Drafts ──────────────────────────────────────────────────────────
 
 // Drafts not updated in 5+ days
+app.get('/api/admin/analytics', requireAdmin, async (req, res) => {
+  const { user_id, category, status, from, to } = req.query;
+
+  // Build dynamic WHERE clauses
+  let conditions = [`r.status != 'draft'`];
+  if (user_id)  conditions.push(`r.user_id = '${user_id.replace(/'/g,"''")}'`);
+  if (status)   conditions.push(`r.status = '${status.replace(/'/g,"''")}'`);
+  if (from)     conditions.push(`r.event_date >= '${from.replace(/'/g,"''")}'`);
+  if (to)       conditions.push(`r.event_date <= '${to.replace(/'/g,"''")}'`);
+  if (category) conditions.push(`e.purpose = '${category.replace(/'/g,"''")}'`);
+
+  const where = conditions.join(' AND ');
+
+  const [byCategory, byUser, summary, detail] = await Promise.all([
+    sql.unsafe(`
+      SELECT e.purpose as category,
+             COUNT(e.id)::int as count,
+             COALESCE(SUM(e.amount),0)::float as total
+      FROM expenses e
+      JOIN reports r ON r.id = e.report_id
+      WHERE ${where}
+      GROUP BY e.purpose
+      ORDER BY total DESC
+    `),
+    sql.unsafe(`
+      SELECT u.username,
+             COUNT(DISTINCT r.id)::int as report_count,
+             COUNT(e.id)::int as expense_count,
+             COALESCE(SUM(e.amount),0)::float as total
+      FROM expenses e
+      JOIN reports r ON r.id = e.report_id
+      JOIN users u ON u.id = r.user_id
+      WHERE ${where}
+      GROUP BY u.username
+      ORDER BY total DESC
+    `),
+    sql.unsafe(`
+      SELECT COUNT(DISTINCT r.id)::int as report_count,
+             COUNT(e.id)::int as expense_count,
+             COALESCE(SUM(e.amount),0)::float as grand_total
+      FROM expenses e
+      JOIN reports r ON r.id = e.report_id
+      WHERE ${where}
+    `),
+    sql.unsafe(`
+      SELECT u.username, r.event_location, r.event_date, r.status,
+             e.vendor, e.purpose, e.amount::float, e.comments
+      FROM expenses e
+      JOIN reports r ON r.id = e.report_id
+      JOIN users u ON u.id = r.user_id
+      WHERE ${where}
+      ORDER BY r.event_date DESC, e.sort_order ASC
+      LIMIT 200
+    `)
+  ]);
+
+  res.json({
+    byCategory,
+    byUser,
+    summary: summary[0] || { report_count: 0, expense_count: 0, grand_total: 0 },
+    detail
+  });
+});
+
 app.get('/api/admin/stale-drafts', requireAdmin, async (req, res) => {
   const cutoff = new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString();
   const rows = await sql`
