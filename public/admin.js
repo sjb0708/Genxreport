@@ -675,6 +675,24 @@ async function loadAnalytics() {
     : `<tr><td colspan="6" class="table-empty"><div class="table-empty-icon">🧾</div><p>No expenses match your filters</p></td></tr>`;
 }
 
+async function seedDemoData() {
+  if (!confirm('This will add 5 demo expense reports across your existing users. Continue?')) return;
+  const res = await fetch('/api/admin/seed-demo', { method: 'POST' });
+  const d   = await res.json();
+  if (!res.ok) { toast('Seed failed: ' + d.error, 'error'); return; }
+  toast(`${d.reports} demo reports added!`, 'success');
+  loadAnalytics();
+}
+
+function resetAnalyticsFilters() {
+  document.getElementById('analyticsUser').value     = '';
+  document.getElementById('analyticsCategory').value = '';
+  document.getElementById('analyticsStatus').value   = '';
+  document.getElementById('analyticsFrom').value     = '';
+  document.getElementById('analyticsTo').value       = '';
+  loadAnalytics();
+}
+
 async function loadUsers() {
   const res = await fetch('/api/admin/users');
   allUsers  = await res.json();

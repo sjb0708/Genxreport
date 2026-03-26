@@ -1390,6 +1390,68 @@ async function sendSubmissionEmail(reportId, submitter) {
   } catch(e) { console.error('Email send failed:', e.message); }
 }
 
+// ─── Demo Data Seeder ──────────────────────────────────────────────────────
+
+app.post('/api/admin/seed-demo', requireAdmin, async (req, res) => {
+  try {
+    const users = await sql`SELECT id, username FROM users WHERE role IN ('user','admin','superadmin') AND active=1 LIMIT 5`;
+    if (!users.length) return res.status(400).json({ error: 'No users found to seed data for' });
+
+    const demoReports = [
+      { location: 'Miami, FL',       date: '2026-01-15', status: 'paid',      expenses: [
+        { vendor: 'Delta Airlines',    purpose: 'Airfare',            amount: 420 },
+        { vendor: 'Marriott Hotels',   purpose: 'Hotel/Lodging',      amount: 289 },
+        { vendor: 'Uber Eats',         purpose: 'Food & Beverage',    amount: 64  },
+        { vendor: 'Uber',              purpose: 'Transportation/Gas', amount: 38  },
+      ]},
+      { location: 'Atlanta, GA',     date: '2026-02-03', status: 'paid',      expenses: [
+        { vendor: 'Southwest Airlines',purpose: 'Airfare',            amount: 310 },
+        { vendor: 'Hilton',            purpose: 'Hotel/Lodging',      amount: 195 },
+        { vendor: 'Chipotle',          purpose: 'Food & Beverage',    amount: 42  },
+        { vendor: 'Enterprise',        purpose: 'Car Rental',         amount: 130 },
+        { vendor: 'Shell Gas',         purpose: 'Transportation/Gas', amount: 55  },
+      ]},
+      { location: 'Houston, TX',     date: '2026-02-18', status: 'approved',  expenses: [
+        { vendor: 'American Airlines', purpose: 'Airfare',            amount: 380 },
+        { vendor: 'Hyatt',             purpose: 'Hotel/Lodging',      amount: 220 },
+        { vendor: 'Chick-fil-A',       purpose: 'Food & Beverage',    amount: 28  },
+        { vendor: 'Stage Equipment Co',purpose: 'Equipment Rental',   amount: 600 },
+        { vendor: 'Parking Garage',    purpose: 'Parking',            amount: 45  },
+      ]},
+      { location: 'Nashville, TN',   date: '2026-03-05', status: 'submitted', expenses: [
+        { vendor: 'United Airlines',   purpose: 'Airfare',            amount: 295 },
+        { vendor: 'Best Western',      purpose: 'Hotel/Lodging',      amount: 165 },
+        { vendor: 'DoorDash',          purpose: 'Food & Beverage',    amount: 55  },
+        { vendor: 'Amazon',            purpose: 'Office Supplies',    amount: 87  },
+        { vendor: 'Lyft',              purpose: 'Transportation/Gas', amount: 32  },
+      ]},
+      { location: 'Phoenix, AZ',     date: '2026-03-20', status: 'submitted', expenses: [
+        { vendor: 'Delta Airlines',    purpose: 'Airfare',            amount: 460 },
+        { vendor: 'Courtyard Inn',     purpose: 'Hotel/Lodging',      amount: 210 },
+        { vendor: 'Postmates',         purpose: 'Food & Beverage',    amount: 71  },
+        { vendor: 'Wardrobe House',    purpose: 'Wardrobe/Costumes',  amount: 340 },
+        { vendor: 'AT&T',              purpose: 'Telecommunications', amount: 95  },
+      ]},
+    ];
+
+    let reportCount = 0;
+    for (const [idx, tmpl] of demoReports.entries()) {
+      const user = users[idx % users.length];
+      const rid  = uuidv4();
+      await sql`INSERT INTO reports (id, user_id, request_date, event_location, event_date, submit_payment_to, payment_method, status, submitted_at, reviewed_at, reviewed_by)
+                VALUES (${rid}, ${user.id}, ${tmpl.date}, ${tmpl.location}, ${tmpl.date}, ${user.username}, 'check', ${tmpl.status},
+                        ${tmpl.date}, ${tmpl.status !== 'submitted' ? tmpl.date : null}, ${tmpl.status !== 'submitted' ? 'demo' : null})`;
+      for (const [i, exp] of tmpl.expenses.entries()) {
+        await sql`INSERT INTO expenses (id, report_id, vendor, purpose, amount, comments, sort_order)
+                  VALUES (${uuidv4()}, ${rid}, ${exp.vendor}, ${exp.purpose}, ${exp.amount}, '', ${i+1})`;
+      }
+      reportCount++;
+    }
+
+    res.json({ success: true, reports: reportCount });
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
 // ─── Start ─────────────────────────────────────────────────────────────────
 
 app.listen(PORT, () => {

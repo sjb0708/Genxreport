@@ -270,7 +270,7 @@
       <div class="panel" id="panel-analytics">
         <div class="section-header">
           <div><div class="section-title">Analytics</div><div class="section-subtitle">Audit spending by category and user</div></div>
-          <button class="btn btn-primary btn-sm" onclick="loadAnalytics()">🔄 Refresh</button>
+          <button class="btn btn-secondary btn-sm" onclick="seedDemoData()" style="margin-right:8px;">🌱 Load Demo Data</button>
         </div>
 
         <!-- Filters -->
@@ -279,13 +279,13 @@
             <div class="form-row">
               <div class="form-group">
                 <label>User</label>
-                <select id="analyticsUser" class="form-control" onchange="loadAnalytics()">
+                <select id="analyticsUser" class="form-control">
                   <option value="">All Users</option>
                 </select>
               </div>
               <div class="form-group">
                 <label>Category</label>
-                <select id="analyticsCategory" class="form-control" onchange="loadAnalytics()">
+                <select id="analyticsCategory" class="form-control">
                   <option value="">All Categories</option>
                   <option value="Airfare">Airfare</option>
                   <option value="Hotel/Lodging">Hotel / Lodging</option>
@@ -305,7 +305,7 @@
               </div>
               <div class="form-group">
                 <label>Status</label>
-                <select id="analyticsStatus" class="form-control" onchange="loadAnalytics()">
+                <select id="analyticsStatus" class="form-control">
                   <option value="">All</option>
                   <option value="paid">Paid</option>
                   <option value="approved">Approved</option>
@@ -314,13 +314,17 @@
               </div>
               <div class="form-group">
                 <label>From Date</label>
-                <input type="date" id="analyticsFrom" class="form-control" onchange="loadAnalytics()">
+                <input type="date" id="analyticsFrom" class="form-control">
               </div>
               <div class="form-group">
                 <label>To Date</label>
-                <input type="date" id="analyticsTo" class="form-control" onchange="loadAnalytics()">
+                <input type="date" id="analyticsTo" class="form-control">
               </div>
             </div>
+          </div>
+          <div class="modal-footer" style="border-top:1px solid #e5e7eb;gap:8px;">
+            <button class="btn btn-secondary btn-sm" onclick="resetAnalyticsFilters()">Clear</button>
+            <button class="btn btn-primary" onclick="loadAnalytics()">Run Report</button>
           </div>
         </div>
 
