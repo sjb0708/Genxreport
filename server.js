@@ -1164,13 +1164,14 @@ async function generatePDF(report) {
       // ── Header band
       doc.rect(0, 0, W, 88).fill(BLUE);
 
-      // Logo
-      if (logoBuf) {
-        try { doc.image(logoBuf, 50, 10, { fit: [180, 68], align: 'left', valign: 'center' }); } catch(_){
-          doc.fillColor('#ffffff').fontSize(22).font('Helvetica-Bold').text('GENX TAKEOVER', 50, 28);
-        }
-      } else {
-        doc.fillColor('#ffffff').fontSize(22).font('Helvetica-Bold').text('GENX TAKEOVER', 50, 28);
+      // Logo — write to /tmp first so pdfkit can read it reliably on Vercel
+      try {
+        const logoTmp = path.join('/tmp', 'genx_logo.png');
+        fs.writeFileSync(logoTmp, logoBuf);
+        doc.image(logoTmp, 50, 10, { fit: [180, 68], align: 'left', valign: 'center' });
+      } catch(logoErr) {
+        console.error('PDF logo error:', logoErr.message);
+        // absolute last resort: transparent space, no ugly text
       }
 
       // Red accent bar
