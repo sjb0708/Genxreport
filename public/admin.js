@@ -158,7 +158,7 @@ function showPanel(name) {
     loadAllReports();
   }
   if (name === 'users')     loadUsers();
-  if (name === 'settings')  { loadSmtpSettings(); loadAdminNotifPref(); }
+  if (name === 'settings')  { loadSmtpSettings(); loadAdminNotifPref(); loadBudget(); }
   if (name === 'analytics') loadAnalytics();
   if (name === 'export')    loadUserFilter('exportUser');
   if (name === 'tourstops') loadTourStops();
@@ -621,7 +621,7 @@ async function loadAnalytics() {
 
   const res = await fetch('/api/admin/analytics?' + params.toString());
   if (!res.ok) { toast('Analytics failed to load.', 'error'); return; }
-  const { byCategory, byUser, byVenue, summary, detail, locations } = await res.json();
+  const { byCategory, byUser, byVenue, summary, detail, locations, budget } = await res.json();
 
   // Refresh location dropdown while preserving selection
   const locSel = document.getElementById('analyticsLocation');
@@ -650,13 +650,20 @@ async function loadAnalytics() {
         const avgPer = v.people > 0 ? v.total / v.people : 0;
         const isHigh = byVenue.length > 1 && v.total > (grandTotal / byVenue.length) * 1.5;
         const bar    = `<div style="display:inline-block;width:${Math.max(4, Math.round((v.total/byVenue[0].total)*80))}px;height:6px;background:${isHigh?'#dc2626':'#1a3f8c'};border-radius:3px;margin-right:8px;vertical-align:middle;"></div>`;
+        const venueBudget = budget?.total_per_show || 0;
+        const budgetIndicator = venueBudget > 0 ? (() => {
+          const bpct = (v.total / venueBudget) * 100;
+          const color = bpct > 100 ? '#dc2626' : bpct > 80 ? '#d97706' : '#16a34a';
+          const icon  = bpct > 100 ? '🔴' : bpct > 80 ? '🟡' : '🟢';
+          return `<span style="color:${color};font-size:11px;margin-left:6px;">${icon} ${bpct.toFixed(0)}% of $${venueBudget.toLocaleString()} budget</span>`;
+        })() : '';
         return `<tr style="${isHigh ? 'background:#fff7f7;' : i===0 ? 'background:#f0f7ff;' : ''}"
                     onclick="document.getElementById('analyticsLocation').value='${esc(v.venue)}';loadAnalytics();"
                     style="cursor:pointer;${isHigh ? 'background:#fff7f7;' : i===0 ? 'background:#f0f7ff;' : ''}">
           <td><strong>${esc(v.venue)}</strong>${isHigh ? ' <span style="color:#dc2626;" title="High spend venue">⚠️</span>' : ''}</td>
           <td style="color:#6b7280;">${v.date||'—'}</td>
           <td style="text-align:right;color:#6b7280;">${v.people}</td>
-          <td style="text-align:right;font-weight:700;white-space:nowrap;">${bar}${fmt(v.total)}</td>
+          <td style="text-align:right;font-weight:700;white-space:nowrap;">${bar}${fmt(v.total)}${budgetIndicator}</td>
           <td style="text-align:right;color:#6b7280;">${fmt(avgPer)}</td>
           <td style="text-align:right;color:#6b7280;">${pct}%</td>
         </tr>`;
@@ -698,16 +705,24 @@ async function loadAnalytics() {
     ? byCategory.map(r => {
         const pct = grandTotal > 0 ? ((r.total / grandTotal) * 100).toFixed(1) : '0.0';
         const bar = `<div style="display:inline-block;width:${Math.max(4,Math.round(parseFloat(pct)))}%;max-width:80px;height:6px;background:#1a3f8c;border-radius:3px;margin-right:6px;vertical-align:middle;"></div>`;
+        const catBudget = budget?.categories?.[r.category] || 0;
+        const budgetCell = catBudget > 0 ? (() => {
+          const bpct = (r.total / catBudget) * 100;
+          const color = bpct > 100 ? '#dc2626' : bpct > 80 ? '#d97706' : '#16a34a';
+          const icon  = bpct > 100 ? '🔴' : bpct > 80 ? '🟡' : '🟢';
+          return `<span style="color:${color};font-size:11px;">${icon} ${bpct.toFixed(0)}% of $${catBudget}</span>`;
+        })() : '<span style="color:#d1d5db;font-size:11px;">No limit</span>';
         return `<tr>
           <td><strong>${esc(r.category||'Uncategorized')}</strong></td>
           <td style="text-align:right;font-weight:700;">${fmt(r.total)}</td>
           <td style="text-align:right;white-space:nowrap;">${bar}${pct}%</td>
+          <td style="text-align:right;">${budgetCell}</td>
         </tr>`;
       }).join('') + `<tr style="border-top:2px solid #e5e7eb;background:#f9fafb;font-weight:700;">
         <td>TOTAL</td>
-        <td style="text-align:right;color:#1a3f8c;">${fmt(grandTotal)}</td><td></td>
+        <td style="text-align:right;color:#1a3f8c;">${fmt(grandTotal)}</td><td></td><td></td>
       </tr>`
-    : `<tr><td colspan="3" class="table-empty"><div class="table-empty-icon">📊</div><p>No data</p></td></tr>`;
+    : `<tr><td colspan="4" class="table-empty"><div class="table-empty-icon">📊</div><p>No data</p></td></tr>`;
 
   // Detail table
   document.getElementById('anDetailSubtitle').textContent =
@@ -741,6 +756,49 @@ function resetAnalyticsFilters() {
   document.getElementById('analyticsFrom').value     = '';
   document.getElementById('analyticsTo').value       = '';
   loadAnalytics();
+}
+
+const BUDGET_CATEGORIES = [
+  'Airfare','Hotel/Lodging','Transportation/Gas','Car Rental',
+  'Food & Beverage','Parking','Entertainment','Equipment Rental',
+  'Office Supplies','Marketing/Promotion','Wardrobe/Costumes',
+  'Professional Services','Telecommunications','Miscellaneous'
+];
+
+async function loadBudget() {
+  const res = await fetch('/api/admin/budget');
+  if (!res.ok) return;
+  const b = await res.json();
+  document.getElementById('budgetTotal').value = b.total_per_show || '';
+
+  const container = document.getElementById('budgetCategoryInputs');
+  container.innerHTML = BUDGET_CATEGORIES.map(cat => `
+    <div class="form-group" style="margin-bottom:8px;">
+      <label style="font-size:11px;">${cat}</label>
+      <div style="position:relative;">
+        <span style="position:absolute;left:10px;top:50%;transform:translateY(-50%);color:#6b7280;font-size:13px;">$</span>
+        <input type="number" id="budgetCat_${cat.replace(/[^a-z0-9]/gi,'_')}"
+               class="form-control" placeholder="No limit"
+               style="padding-left:24px;height:36px;font-size:13px;"
+               value="${b.categories?.[cat] || ''}">
+      </div>
+    </div>
+  `).join('');
+}
+
+async function saveBudget() {
+  const total_per_show = parseFloat(document.getElementById('budgetTotal').value) || 0;
+  const categories = {};
+  BUDGET_CATEGORIES.forEach(cat => {
+    const val = parseFloat(document.getElementById('budgetCat_' + cat.replace(/[^a-z0-9]/gi,'_')).value);
+    if (val > 0) categories[cat] = val;
+  });
+  const res = await fetch('/api/admin/budget', {
+    method: 'POST', headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({ total_per_show, categories })
+  });
+  if (!res.ok) { toast('Failed to save budget.', 'error'); return; }
+  toast('Budget template saved!', 'success');
 }
 
 async function loadUsers() {

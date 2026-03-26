@@ -372,8 +372,8 @@
             <div class="card-header"><div class="card-title">Where the Money Goes</div></div>
             <div class="table-wrapper">
               <table>
-                <thead><tr><th>Category</th><th style="text-align:right">Total</th><th style="text-align:right">% of Spend</th></tr></thead>
-                <tbody id="anCategoryBody"><tr><td colspan="3" class="table-empty"><p>Run a report</p></td></tr></tbody>
+                <thead><tr><th>Category</th><th style="text-align:right">Total</th><th style="text-align:right">% of Spend</th><th style="text-align:right">Budget</th></tr></thead>
+                <tbody id="anCategoryBody"><tr><td colspan="4" class="table-empty"><p>Run a report</p></td></tr></tbody>
               </table>
             </div>
           </div>
@@ -519,6 +519,25 @@
                 <div id="logoMsg" style="margin-top:10px;"></div>
               </div>
             </div>
+          </div>
+        </div>
+        <div class="card" style="margin-top:20px;">
+          <div class="card-header"><div class="card-title">💰 Budget Template</div><div class="card-subtitle">Default spending limits applied to every show</div></div>
+          <div class="card-body">
+            <div class="form-group">
+              <label>Total Budget Per Show</label>
+              <div style="position:relative;">
+                <span style="position:absolute;left:12px;top:50%;transform:translateY(-50%);color:#6b7280;">$</span>
+                <input type="number" id="budgetTotal" class="form-control" placeholder="e.g. 3000" style="padding-left:24px;">
+              </div>
+            </div>
+            <div style="font-size:12px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:0.6px;margin:16px 0 10px;">Per-Category Limits</div>
+            <div id="budgetCategoryInputs" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+              <!-- populated by JS -->
+            </div>
+          </div>
+          <div class="modal-footer" style="border-top:1px solid #e5e7eb;">
+            <button class="btn btn-primary" onclick="saveBudget()">Save Budget</button>
           </div>
         </div>
       </div>

@@ -426,7 +426,9 @@ app.get('/api/admin/analytics', requireAdmin, async (req, res) => {
     status: r.status, vendor: r.vendor, purpose: r.purpose, amount: parseFloat(r.amount || 0), comments: r.comments
   }));
 
-  res.json({ byCategory, byUser, byVenue, summary, detail, locations: allLocations.map(r => r.event_location) });
+  const budgetRaw = await getSetting('budget_template');
+  const budget = budgetRaw ? JSON.parse(budgetRaw) : { total_per_show: 0, categories: {} };
+  res.json({ byCategory, byUser, byVenue, summary, detail, locations: allLocations.map(r => r.event_location), budget });
   } catch(e) { console.error('Analytics error:', e); res.status(500).json({ error: e.message }); }
 });
 
@@ -1474,6 +1476,19 @@ app.post('/api/admin/seed-demo', requireAdmin, async (req, res) => {
 
     res.json({ success: true, reports: reportCount });
   } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
+// ─── Budget Template ───────────────────────────────────────────────────────
+
+app.get('/api/admin/budget', requireAdmin, async (req, res) => {
+  const raw = await getSetting('budget_template');
+  res.json(raw ? JSON.parse(raw) : { total_per_show: 0, categories: {} });
+});
+
+app.post('/api/admin/budget', requireAdmin, async (req, res) => {
+  const { total_per_show, categories } = req.body;
+  await upsertSetting('budget_template', JSON.stringify({ total_per_show: parseFloat(total_per_show)||0, categories: categories||{} }));
+  res.json({ success: true });
 });
 
 // ─── Start ─────────────────────────────────────────────────────────────────
