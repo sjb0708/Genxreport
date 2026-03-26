@@ -150,11 +150,13 @@ button, input, select, textarea { font-family: inherit; }
 /* ── Main Content ─────────────────────────────────────────── */
 .main-content { margin-left: var(--sidebar-w); flex: 1; display: flex; flex-direction: column; min-width: 0; }
 .topbar {
-  height: var(--topbar-h); background: var(--bg-card); border-bottom: 1px solid var(--border);
+  height: var(--topbar-h); background: var(--bg-card);
+  border-bottom: 1px solid var(--border);
   display: flex; align-items: center; padding: 0 28px; gap: 16px;
-  position: sticky; top: 0; z-index: 50; box-shadow: var(--shadow-xs);
+  position: sticky; top: 0; z-index: 50;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
 }
-.topbar-title { font-size: 18px; font-weight: 700; color: var(--text); flex: 1; }
+.topbar-title { font-size: 16px; font-weight: 700; color: var(--text); flex: 1; letter-spacing: -0.01em; }
 .topbar-actions { display: flex; align-items: center; gap: 10px; }
 .page-body { flex: 1; padding: 28px; animation: fadeIn 0.3s ease; }
 
@@ -519,9 +521,23 @@ tbody td strong { color: var(--text); font-weight: 600; }
 .filter-bar .form-control { padding: 8px 12px; font-size: 13px; width: auto; }
 
 /* ── Section Headers ──────────────────────────────────────── */
-.section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px; gap: 16px; }
-.section-title  { font-size: 17px; font-weight: 700; color: var(--text); }
-.section-subtitle { font-size: 13px; color: var(--text-muted); margin-top: 2px; }
+.section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; gap: 16px; }
+.section-title  { font-size: 18px; font-weight: 800; color: var(--text); letter-spacing: -0.02em; }
+.section-subtitle { font-size: 13px; color: var(--text-muted); margin-top: 3px; font-weight: 400; }
+
+/* ── Export icon ──────────────────────────────────────────── */
+.export-icon-wrap {
+  width: 56px; height: 56px; border-radius: 14px;
+  background: var(--primary-ghost); display: flex; align-items: center;
+  justify-content: center; margin: 0 auto 14px;
+}
+.export-icon-wrap svg { width: 26px; height: 26px; stroke: var(--primary); stroke-width: 1.5; }
+
+/* ── Card state variants ──────────────────────────────────── */
+.card-warning { border-color: #fde68a !important; }
+.card-warning > .card-header { background: #fffbeb; }
+.card-danger  { border-color: #fca5a5 !important; border-width: 2px !important; }
+.card-danger  > .card-header { background: #fff5f5; }
 
 /* ── Empty State ──────────────────────────────────────────── */
 .empty-state { text-align: center; padding: 64px 24px; color: var(--text-muted); animation: fadeIn 0.5s ease; }

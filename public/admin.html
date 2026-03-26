@@ -17,7 +17,7 @@
 <!-- Create User Modal -->
 <div class="modal-overlay" id="createUserModal">
   <div class="modal">
-    <div class="modal-header"><span class="modal-title">👤 Create New User</span><button class="modal-close" onclick="closeModal('createUserModal')">✕</button></div>
+    <div class="modal-header"><span class="modal-title">Create New User</span><button class="modal-close" onclick="closeModal('createUserModal')">✕</button></div>
     <div class="modal-body">
       <div class="form-row">
         <div class="form-group"><label>Username <span class="required">*</span></label><input type="text" id="newUsername" class="form-control" placeholder="e.g. mike_carter"></div>
@@ -44,7 +44,7 @@
 <!-- Reset Password Modal -->
 <div class="modal-overlay" id="resetPwModal">
   <div class="modal">
-    <div class="modal-header"><span class="modal-title">🔑 Reset Password</span><button class="modal-close" onclick="closeModal('resetPwModal')">✕</button></div>
+    <div class="modal-header"><span class="modal-title">Reset Password</span><button class="modal-close" onclick="closeModal('resetPwModal')">✕</button></div>
     <div class="modal-body">
       <p style="font-size:13px;color:#6b7280;margin-bottom:16px;" id="resetPwName"></p>
       <div class="form-group mb-0"><label>New Password <span class="required">*</span></label><input type="password" id="resetPwValue" class="form-control" placeholder="Min 6 characters"></div>
@@ -74,10 +74,10 @@
 <!-- Report Detail Modal -->
 <div class="modal-overlay" id="reportDetailModal">
   <div class="modal" style="max-width:700px;">
-    <div class="modal-header"><span class="modal-title">📋 Report Detail</span><button class="modal-close" onclick="closeModal('reportDetailModal')">✕</button></div>
+    <div class="modal-header"><span class="modal-title">Report Detail</span><button class="modal-close" onclick="closeModal('reportDetailModal')">✕</button></div>
     <div class="modal-body" id="reportDetailModalBody"><div class="spinner"></div></div>
     <div class="modal-footer">
-      <button class="btn btn-danger" id="btnDeleteReport" onclick="deleteReportFromDetail()" style="margin-right:auto;">🗑 Delete Report</button>
+      <button class="btn btn-danger" id="btnDeleteReport" onclick="deleteReportFromDetail()" style="margin-right:auto;">Delete Report</button>
       <button class="btn btn-secondary" onclick="closeModal('reportDetailModal')">Close</button>
     </div>
   </div>
@@ -86,7 +86,7 @@
 <!-- Mark as Paid Modal -->
 <div class="modal-overlay" id="paidModal">
   <div class="modal">
-    <div class="modal-header"><span class="modal-title">💳 Mark as Paid</span><button class="modal-close" onclick="closeModal('paidModal')">✕</button></div>
+    <div class="modal-header"><span class="modal-title">Mark as Paid</span><button class="modal-close" onclick="closeModal('paidModal')">✕</button></div>
     <div class="modal-body">
       <div class="form-group mb-0"><label>Payment Notes <span style="color:#9ca3af;font-weight:400;">(optional)</span></label><textarea id="paidNotes" class="form-control" rows="3" placeholder="Check #, payment reference, notes…"></textarea></div>
     </div>
@@ -100,7 +100,7 @@
 <!-- Change Admin Password Modal -->
 <div class="modal-overlay" id="adminPwModal">
   <div class="modal">
-    <div class="modal-header"><span class="modal-title">🔐 Change My Password</span><button class="modal-close" onclick="closeModal('adminPwModal')">✕</button></div>
+    <div class="modal-header"><span class="modal-title">Change Password</span><button class="modal-close" onclick="closeModal('adminPwModal')">✕</button></div>
     <div class="modal-body">
       <div class="form-group"><label>Current Password</label><input type="password" id="adminPwCurrent" class="form-control"></div>
       <div class="form-group"><label>New Password</label><input type="password" id="adminPwNew" class="form-control"></div>
@@ -149,7 +149,7 @@
   <div class="main-content">
     <div class="topbar">
       <div style="display:flex;align-items:center;gap:10px;">
-        <button id="hamburgerBtn" onclick="toggleSidebar()" style="display:none;background:none;border:none;cursor:pointer;font-size:22px;padding:4px 8px;border-radius:8px;line-height:1;" title="Menu">☰</button>
+        <button id="hamburgerBtn" onclick="toggleSidebar()" style="display:none;background:none;border:none;cursor:pointer;padding:6px;border-radius:8px;line-height:1;color:#374151;" title="Menu"><i data-lucide="menu" style="width:20px;height:20px;"></i></button>
         <div class="topbar-title" id="panelTitle">Dashboard</div>
         <button id="setupGuideBtn" onclick="reopenSetupGuide()" style="display:none;background:#e0e7ff;border:none;cursor:pointer;font-size:12px;font-weight:700;color:#1a3f8c;padding:4px 10px;border-radius:20px;line-height:1.4;" title="Setup Guide">? Setup Guide</button>
       </div>
@@ -217,10 +217,10 @@
         </div>
 
         <!-- Stale Drafts Alert Card -->
-        <div class="card" id="staleDraftsCard" style="display:none;margin-bottom:20px;border:1.5px solid #fde68a;">
-          <div class="card-header" style="background:#fffbeb;">
+        <div class="card card-warning" id="staleDraftsCard" style="display:none;margin-bottom:20px;">
+          <div class="card-header">
             <div>
-              <div class="card-title" style="color:#92400e;">⚠️ Stale Drafts — <span id="staleDraftsCount">0</span> report(s) sitting for 5+ days</div>
+              <div class="card-title" style="color:#92400e;display:flex;align-items:center;gap:6px;"><i data-lucide="alert-triangle" style="width:15px;height:15px;flex-shrink:0;"></i> Stale Drafts — <span id="staleDraftsCount">0</span> report(s) sitting for 5+ days</div>
               <div class="card-subtitle">Send a reminder to the user or delete the draft to clean up.</div>
             </div>
             <button class="btn btn-ghost btn-sm" onclick="document.getElementById('filterStatus').value='draft';showPanel('reports')">View All Drafts →</button>
@@ -248,7 +248,7 @@
 
         <div class="card">
           <div class="card-header">
-            <div><div class="card-title">✅ Recently Closed</div><div class="card-subtitle">Last 5 approved or paid reports</div></div>
+            <div><div class="card-title">Recently Closed</div><div class="card-subtitle">Last 5 approved or paid reports</div></div>
             <button class="btn btn-ghost btn-sm" onclick="filterReports('paid');showPanel('reports')">View All →</button>
           </div>
           <div class="table-wrapper">
@@ -375,9 +375,9 @@
 
   <!-- Flagged Issues -->
   <div id="anFlagsCard" style="display:none;margin-bottom:20px;">
-    <div class="card" style="border:2px solid #fca5a5;">
-      <div class="card-header" style="background:#fff5f5;">
-        <div><div class="card-title" style="color:#dc2626;">⚠️ Issues Requiring Attention</div><div class="card-subtitle" id="anFlagsSubtitle"></div></div>
+    <div class="card card-danger">
+      <div class="card-header">
+        <div><div class="card-title" style="color:#dc2626;display:flex;align-items:center;gap:6px;"><i data-lucide="alert-triangle" style="width:15px;height:15px;flex-shrink:0;"></i> Issues Requiring Attention</div><div class="card-subtitle" id="anFlagsSubtitle"></div></div>
       </div>
       <div class="card-body" id="anFlagsBody" style="padding:12px 20px;"></div>
     </div>
@@ -385,10 +385,10 @@
 
   <!-- Summary stat cards -->
   <div class="stats-grid" style="margin-bottom:20px;">
-    <div class="stat-card blue"><div class="stat-icon">💰</div><div class="stat-value" id="anStatTotal">—</div><div class="stat-label">Total Spend</div></div>
-    <div class="stat-card gold"><div class="stat-icon">📍</div><div class="stat-value" id="anStatVenues">—</div><div class="stat-label">Venues</div></div>
-    <div class="stat-card orange"><div class="stat-icon">👥</div><div class="stat-value" id="anStatPeople">—</div><div class="stat-label">People</div></div>
-    <div class="stat-card green"><div class="stat-icon">📊</div><div class="stat-value" id="anStatAvgVenue">—</div><div class="stat-label">Avg Cost / Venue</div></div>
+    <div class="stat-card blue"><div class="stat-icon"><i data-lucide="trending-up"></i></div><div class="stat-value" id="anStatTotal">—</div><div class="stat-label">Total Spend</div></div>
+    <div class="stat-card gold"><div class="stat-icon"><i data-lucide="map-pin"></i></div><div class="stat-value" id="anStatVenues">—</div><div class="stat-label">Venues</div></div>
+    <div class="stat-card orange"><div class="stat-icon"><i data-lucide="users"></i></div><div class="stat-value" id="anStatPeople">—</div><div class="stat-label">People</div></div>
+    <div class="stat-card green"><div class="stat-icon"><i data-lucide="bar-chart-2"></i></div><div class="stat-value" id="anStatAvgVenue">—</div><div class="stat-label">Avg Cost / Venue</div></div>
   </div>
 
   <!-- Charts row -->
@@ -473,7 +473,7 @@
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:24px;">
           <div class="card" style="cursor:default;">
             <div class="card-body" style="text-align:center;padding:28px;">
-              <div style="font-size:36px;margin-bottom:10px;">📊</div>
+              <div class="export-icon-wrap"><i data-lucide="table-2"></i></div>
               <div style="font-weight:700;margin-bottom:4px;">Excel (.xlsx)</div>
               <div style="font-size:12px;color:#6b7280;margin-bottom:16px;">Formatted spreadsheet with all data</div>
               <button class="btn btn-primary" onclick="doExport('xlsx')">Download Excel</button>
@@ -481,7 +481,7 @@
           </div>
           <div class="card" style="cursor:default;">
             <div class="card-body" style="text-align:center;padding:28px;">
-              <div style="font-size:36px;margin-bottom:10px;">📄</div>
+              <div class="export-icon-wrap"><i data-lucide="file-spreadsheet"></i></div>
               <div style="font-weight:700;margin-bottom:4px;">CSV (.csv)</div>
               <div style="font-size:12px;color:#6b7280;margin-bottom:16px;">QuickBooks Online import format</div>
               <button class="btn btn-primary" onclick="doExport('csv')">Download CSV</button>
@@ -489,7 +489,7 @@
           </div>
           <div class="card" style="cursor:default;">
             <div class="card-body" style="text-align:center;padding:28px;">
-              <div style="font-size:36px;margin-bottom:10px;">💼</div>
+              <div class="export-icon-wrap"><i data-lucide="briefcase"></i></div>
               <div style="font-weight:700;margin-bottom:4px;">QuickBooks IIF</div>
               <div style="font-size:12px;color:#6b7280;margin-bottom:16px;">QuickBooks Desktop import</div>
               <button class="btn btn-primary" onclick="doExport('iif')">Download IIF</button>
@@ -497,7 +497,7 @@
           </div>
           <div class="card" style="cursor:default;">
             <div class="card-body" style="text-align:center;padding:28px;">
-              <div style="font-size:36px;margin-bottom:10px;">💾</div>
+              <div class="export-icon-wrap"><i data-lucide="archive"></i></div>
               <div style="font-weight:700;margin-bottom:4px;">Quicken QIF</div>
               <div style="font-size:12px;color:#6b7280;margin-bottom:16px;">Quicken Desktop import</div>
               <button class="btn btn-primary" onclick="doExport('qif')">Download QIF</button>
@@ -532,7 +532,7 @@
         </div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:start;">
           <div class="card">
-            <div class="card-header"><div class="card-title">📧 Email / SMTP</div></div>
+            <div class="card-header"><div class="card-title">Email / SMTP</div></div>
             <div class="card-body">
               <div class="form-row">
                 <div class="form-group"><label>SMTP Host</label><input type="text" id="smtpHost" class="form-control" placeholder="smtp.gmail.com"></div>
@@ -558,7 +558,7 @@
 
           <div style="display:flex;flex-direction:column;gap:20px;">
             <div class="card">
-              <div class="card-header"><div class="card-title">🔐 My Password</div></div>
+              <div class="card-header"><div class="card-title">My Password</div></div>
               <div class="card-body">
                 <p style="font-size:13px;color:#6b7280;margin-bottom:14px;">Change your admin account password.</p>
                 <button class="btn btn-ghost" onclick="openModal('adminPwModal')">Change Password</button>
@@ -582,7 +582,7 @@
               </div>
             </div>
             <div class="card">
-              <div class="card-header"><div class="card-title">🖼 Logo / Branding</div></div>
+              <div class="card-header"><div class="card-title">Logo / Branding</div></div>
               <div class="card-body">
                 <p style="font-size:13px;color:#6b7280;margin-bottom:14px;">Upload a logo to replace the GENX TAKEOVER text in the sidebar and login screen.</p>
                 <label style="cursor:pointer;" class="btn btn-ghost">
@@ -595,7 +595,7 @@
           </div>
         </div>
         <div class="card" style="margin-top:20px;">
-          <div class="card-header"><div class="card-title">💰 Budget Template</div><div class="card-subtitle">Default spending limits applied to every show</div></div>
+          <div class="card-header"><div class="card-title">Budget Template</div><div class="card-subtitle">Default spending limits applied to every show</div></div>
           <div class="card-body">
             <div style="background:#f0f7ff;border:1px solid #bfdbfe;border-radius:8px;padding:14px 16px;margin-bottom:20px;font-size:13px;color:#1e40af;line-height:1.6;">
               <strong>How this works:</strong> Set your expected max spend per show and optional limits per expense category. These numbers power the <strong>Analytics flags</strong> — when spending gets close to or exceeds a limit, you'll see a 🟡 or 🔴 alert automatically. Leave any field blank to skip tracking that category.

@@ -17,11 +17,11 @@
 
 <div class="modal-overlay" id="cameraModal">
   <div class="modal">
-    <div class="modal-header"><span class="modal-title">📷 Capture Receipt</span><button class="modal-close" onclick="closeModal('cameraModal')">✕</button></div>
+    <div class="modal-header"><span class="modal-title">Capture Receipt</span><button class="modal-close" onclick="closeModal('cameraModal')">✕</button></div>
     <div class="modal-body">
       <video id="cameraStream" autoplay playsinline></video><canvas id="cameraCanvas"></canvas>
       <div style="display:flex;gap:10px;margin-top:14px;justify-content:center;">
-        <button class="btn btn-primary" onclick="capturePhoto()">📸 Capture</button>
+        <button class="btn btn-primary" onclick="capturePhoto()">Capture Photo</button>
         <button class="btn btn-secondary" onclick="stopCamera()">Cancel</button>
       </div>
     </div>
@@ -30,7 +30,7 @@
 
 <div class="modal-overlay" id="newReportModal">
   <div class="modal">
-    <div class="modal-header"><span class="modal-title">✚ New Expense Report</span><button class="modal-close" onclick="closeModal('newReportModal')">✕</button></div>
+    <div class="modal-header"><span class="modal-title">New Expense Report</span><button class="modal-close" onclick="closeModal('newReportModal')">✕</button></div>
     <div class="modal-body">
       <div class="form-group">
         <label>Tour Stop <span class="required">*</span></label>
@@ -67,7 +67,7 @@
 
 <div class="modal-overlay" id="editReportModal">
   <div class="modal">
-    <div class="modal-header"><span class="modal-title">✎ Edit Report Details</span><button class="modal-close" onclick="closeModal('editReportModal')">✕</button></div>
+    <div class="modal-header"><span class="modal-title">Edit Report Details</span><button class="modal-close" onclick="closeModal('editReportModal')">✕</button></div>
     <div class="modal-body">
       <div class="form-group">
         <label>Tour Stop</label>
@@ -131,14 +131,14 @@
       </div>
       <div class="form-group mb-0"><label>Comments / Notes</label><input type="text" id="expComments" class="form-control" placeholder="Optional details…"></div>
       <div class="form-group mb-0" style="margin-top:14px;">
-        <label>📎 Receipt (optional)</label>
+        <label>Receipt (optional)</label>
         <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:6px;">
           <label style="flex:1;min-width:120px;cursor:pointer;background:#1a3f8c;color:#fff;text-align:center;padding:10px;border-radius:8px;font-size:13px;">
-            📁 Choose File / PDF
+            Choose File / PDF
             <input type="file" id="expReceiptFile" accept="image/*,application/pdf" multiple style="display:none;" onchange="previewExpReceipts(this.files)">
           </label>
           <label style="flex:1;min-width:120px;cursor:pointer;background:#d4a017;color:#fff;text-align:center;padding:10px;border-radius:8px;font-size:13px;">
-            📷 Take Photo
+            Take Photo
             <input type="file" id="expReceiptCamera" accept="image/*" capture="environment" multiple style="display:none;" onchange="previewExpReceipts(this.files)">
           </label>
         </div>
@@ -155,18 +155,18 @@
 
 <div class="modal-overlay" id="uploadModal">
   <div class="modal">
-    <div class="modal-header"><span class="modal-title">📎 Attach Receipts</span><button class="modal-close" onclick="closeModal('uploadModal')">✕</button></div>
+    <div class="modal-header"><span class="modal-title">Attach Receipts</span><button class="modal-close" onclick="closeModal('uploadModal')">✕</button></div>
     <div class="modal-body">
       <p style="font-size:13px;color:#6b7280;margin-bottom:16px;">Attaching receipts for: <strong id="uploadExpenseLabel"></strong></p>
       <div class="drop-zone" id="dropZone" onclick="document.getElementById('fileInput').click()">
-        <div class="drop-zone-icon">📁</div>
+        <div class="drop-zone-icon"><i data-lucide="upload-cloud" style="width:36px;height:36px;color:#9ca3af;"></i></div>
         <p><strong>Click to browse</strong> or drag &amp; drop files here</p>
         <p style="margin-top:6px;font-size:12px;">JPG, PNG, PDF, HEIC up to 20MB each</p>
       </div>
       <input type="file" id="fileInput" multiple accept="image/*,.pdf,.heic,.heif" style="display:none">
       <div style="margin-top:14px;display:flex;gap:10px;justify-content:center;">
         <label style="cursor:pointer;" class="btn btn-secondary">
-          📷 Take Photo
+          Take Photo
           <input type="file" id="cameraInputUpload" accept="image/*" capture="environment" style="display:none;" onchange="if(this.files.length) uploadFiles(this.files); this.value='';">
         </label>
       </div>
@@ -181,7 +181,7 @@
 
 <div class="modal-overlay" id="submitModal">
   <div class="modal">
-    <div class="modal-header"><span class="modal-title">📤 Submit for Review</span><button class="modal-close" onclick="closeModal('submitModal')">✕</button></div>
+    <div class="modal-header"><span class="modal-title">Submit for Review</span><button class="modal-close" onclick="closeModal('submitModal')">✕</button></div>
     <div class="modal-body">
       <div class="alert alert-info" style="margin-bottom:16px;">Once submitted, you cannot edit this report. Admin will be notified.</div>
       <div id="submitSummary"></div>
@@ -210,7 +210,7 @@
 <!-- Admin: Mark as Paid Modal -->
 <div class="modal-overlay" id="appPaidModal">
   <div class="modal">
-    <div class="modal-header"><span class="modal-title">💳 Mark as Paid</span><button class="modal-close" onclick="closeModal('appPaidModal')">✕</button></div>
+    <div class="modal-header"><span class="modal-title">Mark as Paid</span><button class="modal-close" onclick="closeModal('appPaidModal')">✕</button></div>
     <div class="modal-body">
       <div class="form-group mb-0"><label>Payment Notes <span style="color:#9ca3af;font-weight:400;">(optional)</span></label><textarea id="appPaidNotes" class="form-control" rows="3" placeholder="Check #, payment reference, notes…"></textarea></div>
     </div>
@@ -252,10 +252,10 @@
       <div class="topbar-title" id="panelTitle">Expense Reports</div>
       <div style="display:flex;align-items:center;gap:10px;">
         <div style="position:relative;">
-          <button id="notifBell" onclick="toggleNotifPanel()" style="background:none;border:none;cursor:pointer;font-size:20px;padding:4px 8px;border-radius:8px;transition:background 0.15s;" title="Notifications">🔔</button>
-          <span id="notifBadge" style="display:none;position:absolute;top:0;right:0;background:#dc2626;color:#fff;border-radius:50%;width:18px;height:18px;font-size:10px;font-weight:800;align-items:center;justify-content:center;"></span>
+          <button id="notifBell" onclick="toggleNotifPanel()" style="background:none;border:1.5px solid #e5e7eb;cursor:pointer;padding:7px;border-radius:10px;transition:all 0.15s;display:flex;align-items:center;justify-content:center;color:#374151;" title="Notifications" onmouseover="this.style.background='#f0f4f8';this.style.borderColor='#1a3f8c';this.style.color='#1a3f8c'" onmouseout="this.style.background='none';this.style.borderColor='#e5e7eb';this.style.color='#374151'"><i data-lucide="bell" style="width:18px;height:18px;"></i></button>
+          <span id="notifBadge" style="display:none;position:absolute;top:-3px;right:-3px;background:#dc2626;color:#fff;border-radius:50%;width:18px;height:18px;font-size:10px;font-weight:800;align-items:center;justify-content:center;border:2px solid #fff;"></span>
         </div>
-        <button class="btn btn-primary btn-sm" onclick="openModal('newReportModal')">✚ New Report</button>
+        <button class="btn btn-primary btn-sm" onclick="openModal('newReportModal')">+ New Report</button>
       </div>
       <!-- Notification Panel -->
       <div id="notifPanel" style="display:none;position:absolute;top:60px;right:16px;width:360px;max-height:480px;background:#fff;border-radius:12px;box-shadow:0 8px 32px rgba(0,0,0,0.18);border:1px solid #e5e7eb;z-index:1000;overflow:hidden;">
@@ -287,10 +287,10 @@
               </div>
               <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
                 <span class="badge" id="detailStatus"></span>
-                <a id="detailPdfBtn" href="#" target="_blank" class="action-btn action-btn-blue">📄 PDF</a>
-                <button class="action-btn action-btn-gray" id="detailEditBtn" onclick="openEditReport()">✎ Edit</button>
-                <button class="btn btn-primary btn-sm" id="detailSubmitBtn" onclick="openSubmitModal()">📤 Submit</button>
-                <button class="btn btn-danger btn-sm" id="detailDeleteBtn" onclick="deleteReport()">🗑</button>
+                <a id="detailPdfBtn" href="#" target="_blank" class="action-btn action-btn-blue">PDF</a>
+                <button class="action-btn action-btn-gray" id="detailEditBtn" onclick="openEditReport()">Edit</button>
+                <button class="btn btn-primary btn-sm" id="detailSubmitBtn" onclick="openSubmitModal()">Submit</button>
+                <button class="btn btn-danger btn-sm" id="detailDeleteBtn" onclick="deleteReport()">Delete</button>
                 <!-- Admin-only status actions -->
                 <div id="adminStatusActions" style="display:none;gap:6px;align-items:center;flex-wrap:wrap;"></div>
               </div>
