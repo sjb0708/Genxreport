@@ -19,16 +19,6 @@ const __dir = __dirname;
 
 const JWT_SECRET = process.env.JWT_SECRET || 'genx-takeover-secret-jwt-2024';
 
-// ─── Debug route (remove after deploy confirmed working) ───────────────────
-app.get('/__debug', async (req, res) => {
-  try {
-    const users = await sql`SELECT username, role FROM users LIMIT 5`;
-    res.json({ ok: true, DATABASE_URL_SET: !!process.env.DATABASE_URL, users });
-  } catch(e) {
-    res.status(500).json({ ok: false, error: e.message });
-  }
-});
-
 // ─── Directories ───────────────────────────────────────────────────────────
 
 const UPLOAD_DIR = process.env.UPLOAD_DIR || (process.env.VERCEL ? '/tmp/uploads' : path.join(__dir, 'uploads'));
