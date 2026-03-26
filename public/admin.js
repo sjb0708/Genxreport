@@ -158,7 +158,7 @@ function showPanel(name) {
     loadAllReports();
   }
   if (name === 'users')     loadUsers();
-  if (name === 'settings')  loadSmtpSettings();
+  if (name === 'settings')  { loadSmtpSettings(); loadAdminNotifPref(); }
   if (name === 'export')    loadUserFilter('exportUser');
   if (name === 'tourstops') loadTourStops();
 }
@@ -691,6 +691,33 @@ async function loadSmtpSettings() {
   document.getElementById('smtpPass').value   = data.smtp_pass   || '';
   document.getElementById('smtpFrom').value   = data.smtp_from   || '';
   document.getElementById('smtpSecure').value = data.smtp_secure==='true' ? 'true' : 'false';
+}
+
+async function loadAdminNotifPref() {
+  const res = await fetch('/api/auth/me');
+  if (!res.ok) return;
+  const u = await res.json();
+  const on = u.email_notifications !== false;
+  const slider = document.getElementById('adminNotifSlider');
+  const thumb  = document.getElementById('adminNotifThumb');
+  const cb     = document.getElementById('adminEmailNotifToggle');
+  if (!slider) return;
+  cb.checked = on;
+  slider.style.background = on ? '#1a3f8c' : '#d1d5db';
+  thumb.style.transform   = on ? 'translateX(20px)' : 'translateX(0)';
+}
+
+async function saveAdminNotifPref() {
+  const on = document.getElementById('adminEmailNotifToggle').checked;
+  const slider = document.getElementById('adminNotifSlider');
+  const thumb  = document.getElementById('adminNotifThumb');
+  slider.style.background = on ? '#1a3f8c' : '#d1d5db';
+  thumb.style.transform   = on ? 'translateX(20px)' : 'translateX(0)';
+  await fetch('/api/auth/notifications', {
+    method: 'PUT', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email_notifications: on })
+  });
+  toast(on ? 'Email notifications enabled' : 'Email notifications disabled', 'success');
 }
 
 async function saveSmtp() {

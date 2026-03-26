@@ -133,6 +133,7 @@ async function initDB() {
   `;
 
   // Migrations
+  await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS email_notifications INTEGER DEFAULT 1`;
   await sql`ALTER TABLE reports ADD COLUMN IF NOT EXISTS payment_method TEXT DEFAULT 'check'`;
   await sql`ALTER TABLE reports ADD COLUMN IF NOT EXISTS paid_at TEXT`;
   await sql`ALTER TABLE reports ADD COLUMN IF NOT EXISTS paid_by TEXT`;
@@ -244,8 +245,14 @@ app.post('/api/auth/logout', (req, res) => {
 });
 
 app.get('/api/auth/me', requireLogin, (req, res) => {
-  const { id, username, email, role } = req.user;
-  res.json({ id, username, email, role });
+  const { id, username, email, role, email_notifications } = req.user;
+  res.json({ id, username, email, role, email_notifications: email_notifications !== 0 });
+});
+
+app.put('/api/auth/notifications', requireLogin, async (req, res) => {
+  const val = req.body.email_notifications ? 1 : 0;
+  await sql`UPDATE users SET email_notifications=${val} WHERE id=${req.user.id}`;
+  res.json({ success: true });
 });
 
 app.put('/api/auth/password', requireLogin, async (req, res) => {
@@ -1273,9 +1280,14 @@ async function getTransport() {
   });
 }
 
+const APP_URL = 'https://gex-expense-report.vercel.app';
+
 async function sendStatusEmail(report, status, message, notes) {
   const smtp = await getSetting('smtp_user');
   if (!smtp || !report.email) return;
+  // Check user's notification preference
+  const userRow = (await sql`SELECT email_notifications FROM users WHERE id=${report.user_id}`)[0];
+  if (userRow && userRow.email_notifications === 0) return;
   const subjectMap = { approved: '✅ Expense Report Approved', rejected: '❌ Expense Report Rejected', paid: '💳 Expense Report Payment Processed' };
   const t = await getTransport();
   await t.sendMail({
@@ -1286,30 +1298,32 @@ async function sendStatusEmail(report, status, message, notes) {
            <p>Hi ${report.username},</p>
            <p>${message}</p>
            ${notes ? `<p><b>Notes:</b> ${notes}</p>` : ''}
-           <p>Log in to view your report: <a href="http://localhost:3000/app">GENX Expense Portal</a></p>`
+           <p>Log in to view your report: <a href="${APP_URL}/app">GENX Expense Portal</a></p>`
   });
 }
 
 async function sendSubmissionEmail(reportId, submitter) {
   const smtp = await getSetting('smtp_user');
-  if (!smtp) return; // Skip if not configured
+  if (!smtp) return;
   const report = await getFullReport(reportId);
   if (!report) return;
   const total = (report.expenses||[]).reduce((s,e) => s + (parseFloat(e.amount)||0), 0);
   try {
+    // Send to all admins who have email notifications enabled
+    const admins = await sql`SELECT email FROM users WHERE role IN ('admin','superadmin') AND active=1 AND email_notifications=1`;
+    if (!admins.length) return;
     const pdf = await generatePDF(report);
     const fname = `expense-${(report.event_location||'report').replace(/[^a-z0-9]/gi,'-')}-${report.event_date||'report'}.pdf`;
     const t = await getTransport();
     await t.sendMail({
       from:    await getSetting('smtp_from') || smtp,
-      to:      'Therealslimsherri@gmail.com',
-      cc:      'Thedadbodveteran@outlook.com',
-      subject: `Expense Report: ${report.event_location} – ${report.event_date} ($${total.toFixed(2)})`,
+      to:      admins.map(a => a.email).join(', '),
+      subject: `New Expense Report: ${report.event_location} – ${report.event_date} ($${total.toFixed(2)})`,
       html: `<h2>New Expense Report Submitted</h2>
              <p><b>From:</b> ${submitter.username} (${submitter.email})</p>
              <p><b>Event:</b> ${report.event_location} on ${report.event_date}</p>
              <p><b>Total:</b> $${total.toFixed(2)}</p>
-             <p>PDF attached. Login to admin panel to approve/reject.</p>`,
+             <p>PDF attached. <a href="${APP_URL}/admin">Login to admin panel</a> to approve/reject.</p>`,
       attachments: [{ filename: fname, content: pdf, contentType: 'application/pdf' }]
     });
   } catch(e) { console.error('Email send failed:', e.message); }

@@ -52,6 +52,7 @@ function showPanel(name) {
   if (navItem) navItem.classList.add('active');
   const titles = { reports:'Expense Reports', settings:'Account Settings' };
   document.getElementById('panelTitle').textContent = titles[name] || name;
+  if (name === 'settings') loadNotifPref();
 }
 
 // ─── Lightbox ──────────────────────────────────────────────
@@ -859,6 +860,33 @@ async function refreshReport() {
 }
 
 // ─── Change Password ────────────────────────────────────────
+
+function setToggleUI(on) {
+  const slider = document.getElementById('notifSlider');
+  const thumb  = document.getElementById('notifThumb');
+  const cb     = document.getElementById('emailNotifToggle');
+  if (!slider) return;
+  cb.checked = on;
+  slider.style.background = on ? '#1a3f8c' : '#d1d5db';
+  thumb.style.transform   = on ? 'translateX(20px)' : 'translateX(0)';
+}
+
+async function loadNotifPref() {
+  const res = await fetch('/api/auth/me');
+  if (!res.ok) return;
+  const u = await res.json();
+  setToggleUI(u.email_notifications !== false);
+}
+
+async function saveNotifPref() {
+  const on = document.getElementById('emailNotifToggle').checked;
+  setToggleUI(on);
+  await fetch('/api/auth/notifications', {
+    method: 'PUT', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email_notifications: on })
+  });
+  toast(on ? 'Email notifications enabled' : 'Email notifications disabled', 'success');
+}
 
 async function changePassword() {
   const curr    = document.getElementById('pwCurrent').value;
