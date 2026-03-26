@@ -4,7 +4,11 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>GENX TAKEOVER – Expense Reports</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/style.css">
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
 </head>
 <body>
 <div id="toastContainer"></div>
@@ -225,11 +229,11 @@
     </div>
     <div class="sidebar-nav">
       <div class="sidebar-section-label">My Reports</div>
-      <div class="nav-item active" onclick="showPanel('reports')"><span class="nav-icon">📋</span><span>Expense Reports</span><span class="nav-badge" id="draftBadge" style="display:none">0</span></div>
-      <div class="nav-item" onclick="openModal('newReportModal')"><span class="nav-icon">✚</span><span>New Report</span></div>
+      <div class="nav-item active" onclick="showPanel('reports')"><span class="nav-icon"><i data-lucide="file-text"></i></span><span>Expense Reports</span><span class="nav-badge" id="draftBadge" style="display:none">0</span></div>
+      <div class="nav-item" onclick="openModal('newReportModal')"><span class="nav-icon"><i data-lucide="plus-circle"></i></span><span>New Report</span></div>
       <div class="sidebar-section-label">Account</div>
-      <div class="nav-item" onclick="showPanel('settings')"><span class="nav-icon">⚙</span><span>Settings</span></div>
-      <div class="nav-item" id="adminLink" style="display:none" onclick="window.location.href='/admin'"><span class="nav-icon">🛡</span><span>Admin Panel</span></div>
+      <div class="nav-item" onclick="showPanel('settings')"><span class="nav-icon"><i data-lucide="settings"></i></span><span>Settings</span></div>
+      <div class="nav-item" id="adminLink" style="display:none" onclick="window.location.href='/admin'"><span class="nav-icon"><i data-lucide="shield"></i></span><span>Admin Panel</span></div>
     </div>
     <div class="sidebar-footer">
       <div class="sidebar-user">

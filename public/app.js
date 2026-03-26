@@ -73,6 +73,7 @@ function openLightbox(src) {
 // ─── Init ──────────────────────────────────────────────────
 
 document.addEventListener('DOMContentLoaded', async () => {
+  if (window.lucide) lucide.createIcons();
   // Auth check
   const res = await fetch('/api/auth/me');
   if (!res.ok) { window.location.href = '/'; return; }

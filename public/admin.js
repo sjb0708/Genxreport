@@ -64,6 +64,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.querySelectorAll('#newUserRole option[value="superadmin"]').forEach(o => o.remove());
   }
 
+  if (window.lucide) lucide.createIcons();
   initSetupGuide();
   loadDashboard();
   loadUserFilter();

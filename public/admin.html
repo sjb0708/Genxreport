@@ -4,8 +4,12 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>GENX TAKEOVER – Admin Panel</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/style.css">
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
 </head>
 <body>
 <div id="toastContainer"></div>
@@ -118,16 +122,16 @@
     </div>
     <div class="sidebar-nav">
       <div class="sidebar-section-label">Overview</div>
-      <div class="nav-item active" data-panel="dashboard" onclick="showPanel('dashboard')"><span class="nav-icon">📊</span><span>Dashboard</span></div>
-      <div class="nav-item" data-panel="reports" onclick="showPanel('reports')"><span class="nav-icon">📋</span><span>All Reports</span><span class="nav-badge" id="pendingNavBadge" style="display:none">0</span></div>
+      <div class="nav-item active" data-panel="dashboard" onclick="showPanel('dashboard')"><span class="nav-icon"><i data-lucide="layout-dashboard"></i></span><span>Dashboard</span></div>
+      <div class="nav-item" data-panel="reports" onclick="showPanel('reports')"><span class="nav-icon"><i data-lucide="file-text"></i></span><span>All Reports</span><span class="nav-badge" id="pendingNavBadge" style="display:none">0</span></div>
       <div class="sidebar-section-label">Management</div>
-      <div class="nav-item" data-panel="users" onclick="showPanel('users')"><span class="nav-icon">👥</span><span>Users</span></div>
-      <div class="nav-item" data-panel="analytics" onclick="showPanel('analytics')"><span class="nav-icon">📈</span><span>Analytics</span></div>
-      <div class="nav-item" data-panel="export" onclick="showPanel('export')"><span class="nav-icon">📤</span><span>Export Data</span></div>
-      <div class="nav-item" data-panel="tourstops" onclick="showPanel('tourstops')"><span class="nav-icon">📍</span><span>Tour Stops</span></div>
+      <div class="nav-item" data-panel="users" onclick="showPanel('users')"><span class="nav-icon"><i data-lucide="users"></i></span><span>Users</span></div>
+      <div class="nav-item" data-panel="analytics" onclick="showPanel('analytics')"><span class="nav-icon"><i data-lucide="bar-chart-2"></i></span><span>Analytics</span></div>
+      <div class="nav-item" data-panel="export" onclick="showPanel('export')"><span class="nav-icon"><i data-lucide="download"></i></span><span>Export Data</span></div>
+      <div class="nav-item" data-panel="tourstops" onclick="showPanel('tourstops')"><span class="nav-icon"><i data-lucide="map-pin"></i></span><span>Tour Stops</span></div>
       <div class="sidebar-section-label">System</div>
-      <div class="nav-item" data-panel="settings" onclick="showPanel('settings')"><span class="nav-icon">⚙</span><span>Settings</span></div>
-      <div class="nav-item" onclick="window.location.href='/app'"><span class="nav-icon">📝</span><span>My Reports</span></div>
+      <div class="nav-item" data-panel="settings" onclick="showPanel('settings')"><span class="nav-icon"><i data-lucide="settings"></i></span><span>Settings</span></div>
+      <div class="nav-item" onclick="window.location.href='/app'"><span class="nav-icon"><i data-lucide="clipboard-list"></i></span><span>My Reports</span></div>
     </div>
     <div class="sidebar-footer">
       <div class="sidebar-user">
@@ -177,7 +181,7 @@
           <div style="font-size:13px;color:rgba(255,255,255,0.8);margin-bottom:16px;">Complete these steps before running Analytics so flags and budgets work correctly.</div>
           <div style="display:flex;flex-direction:column;gap:10px;">
             <div onclick="showPanel('settings')" style="background:rgba(255,255,255,0.1);border-radius:8px;padding:12px 16px;cursor:pointer;display:flex;align-items:center;gap:12px;transition:background 0.15s;" onmouseover="this.style.background='rgba(255,255,255,0.2)'" onmouseout="this.style.background='rgba(255,255,255,0.1)'">
-              <span style="font-size:22px;">⚙️</span>
+              <span style="width:36px;height:36px;background:rgba(255,255,255,0.15);border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0;"><i data-lucide="settings" style="width:18px;height:18px;color:#fff;"></i></span>
               <div>
                 <div style="font-weight:600;font-size:14px;">Step 1 — Settings → Budget Template</div>
                 <div style="font-size:12px;color:rgba(255,255,255,0.7);">Set your default max spend per show and optional per-category limits (e.g. Airfare $400, Food $300). These power the 🔴🟡 flags in Analytics.</div>
@@ -185,7 +189,7 @@
               <span style="margin-left:auto;font-size:18px;color:rgba(255,255,255,0.5);">›</span>
             </div>
             <div onclick="showPanel('tourstops')" style="background:rgba(255,255,255,0.1);border-radius:8px;padding:12px 16px;cursor:pointer;display:flex;align-items:center;gap:12px;transition:background 0.15s;" onmouseover="this.style.background='rgba(255,255,255,0.2)'" onmouseout="this.style.background='rgba(255,255,255,0.1)'">
-              <span style="font-size:22px;">📍</span>
+              <span style="width:36px;height:36px;background:rgba(255,255,255,0.15);border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0;"><i data-lucide="map-pin" style="width:18px;height:18px;color:#fff;"></i></span>
               <div>
                 <div style="font-weight:600;font-size:14px;">Step 2 — Tour Stops → Add Shows</div>
                 <div style="font-size:12px;color:rgba(255,255,255,0.7);">Add each show date and venue. Optionally set a specific budget per show to override the default — great for big-market vs small-market shows.</div>
@@ -193,7 +197,7 @@
               <span style="margin-left:auto;font-size:18px;color:rgba(255,255,255,0.5);">›</span>
             </div>
             <div onclick="showPanel('analytics')" style="background:rgba(255,255,255,0.1);border-radius:8px;padding:12px 16px;cursor:pointer;display:flex;align-items:center;gap:12px;transition:background 0.15s;" onmouseover="this.style.background='rgba(255,255,255,0.2)'" onmouseout="this.style.background='rgba(255,255,255,0.1)'">
-              <span style="font-size:22px;">📊</span>
+              <span style="width:36px;height:36px;background:rgba(255,255,255,0.15);border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0;"><i data-lucide="bar-chart-2" style="width:18px;height:18px;color:#fff;"></i></span>
               <div>
                 <div style="font-weight:600;font-size:14px;">Step 3 — Analytics → Run Report</div>
                 <div style="font-size:12px;color:rgba(255,255,255,0.7);">Filter by venue, user, category, or date range — then click Run Report. The Issues Requiring Attention section flags anything over or near your budgets.</div>
@@ -205,11 +209,11 @@
         </div>
 
         <div class="stats-grid" id="statsGrid">
-          <div class="stat-card blue" onclick="showPanel('users')" style="cursor:pointer"><div class="stat-icon">👥</div><div class="stat-value" id="statUsers">—</div><div class="stat-label">Active Users</div></div>
-          <div class="stat-card gold" onclick="filterReports('')" style="cursor:pointer"><div class="stat-icon">📋</div><div class="stat-value" id="statReports">—</div><div class="stat-label">Total Reports</div></div>
-          <div class="stat-card orange" onclick="filterReports('submitted')" style="cursor:pointer"><div class="stat-icon">⏳</div><div class="stat-value" id="statPending">—</div><div class="stat-label">Pending Review</div></div>
-          <div class="stat-card green" onclick="filterReports('approved')" style="cursor:pointer"><div class="stat-icon">✅</div><div class="stat-value" id="statApproved">—</div><div class="stat-label">Approved</div></div>
-          <div class="stat-card blue" onclick="filterReports('paid')" style="cursor:pointer"><div class="stat-icon">💰</div><div class="stat-value" id="statTotal">—</div><div class="stat-label">Total Paid $</div></div>
+          <div class="stat-card blue" onclick="showPanel('users')" style="cursor:pointer"><div class="stat-icon"><i data-lucide="users"></i></div><div class="stat-value" id="statUsers">—</div><div class="stat-label">Active Users</div></div>
+          <div class="stat-card gold" onclick="filterReports('')" style="cursor:pointer"><div class="stat-icon"><i data-lucide="file-text"></i></div><div class="stat-value" id="statReports">—</div><div class="stat-label">Total Reports</div></div>
+          <div class="stat-card orange" onclick="filterReports('submitted')" style="cursor:pointer"><div class="stat-icon"><i data-lucide="clock"></i></div><div class="stat-value" id="statPending">—</div><div class="stat-label">Pending Review</div></div>
+          <div class="stat-card green" onclick="filterReports('approved')" style="cursor:pointer"><div class="stat-icon"><i data-lucide="check-circle"></i></div><div class="stat-value" id="statApproved">—</div><div class="stat-label">Approved</div></div>
+          <div class="stat-card blue" onclick="filterReports('paid')" style="cursor:pointer"><div class="stat-icon"><i data-lucide="dollar-sign"></i></div><div class="stat-value" id="statTotal">—</div><div class="stat-label">Total Paid $</div></div>
         </div>
 
         <!-- Stale Drafts Alert Card -->
