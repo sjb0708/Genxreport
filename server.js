@@ -979,7 +979,7 @@ app.get('/api/export/iif', requireAdmin, async (req, res) => {
 
 function findLogo() {
   const dir = path.join(__dir, 'public', 'assets');
-  for (const ext of ['.png','.jpg','.jpeg']) {
+  for (const ext of ['.png','.jpg','.jpeg','.webp']) {
     const fp = path.join(dir, 'logo'+ext);
     if (fs.existsSync(fp)) return fp;
   }
