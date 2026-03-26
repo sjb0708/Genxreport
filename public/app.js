@@ -318,17 +318,23 @@ function renderReportList() {
 // ─── Open Report Detail ────────────────────────────────────
 
 async function openReport(id) {
-  const res    = await fetch('/api/reports/' + id);
-  currentReport= await res.json();
+  try {
+    const res = await fetch('/api/reports/' + id);
+    if (!res.ok) { toast('Could not load report.', 'error'); return; }
+    currentReport = await res.json();
 
-  // Highlight selected card
-  document.querySelectorAll('.report-card').forEach(c => c.classList.remove('active-report'));
-  document.getElementById('card-' + id)?.classList.add('active-report');
+    // Highlight selected card
+    document.querySelectorAll('.report-card').forEach(c => c.classList.remove('active-report'));
+    document.getElementById('card-' + id)?.classList.add('active-report');
 
-  renderReportDetail();
-  document.getElementById('reportDetail').style.display = 'block';
-  document.getElementById('reportDetail').scrollIntoView({ behavior: 'smooth', block: 'start' });
-  window.history.replaceState(null, '', '#' + id);
+    renderReportDetail();
+    const detail = document.getElementById('reportDetail');
+    detail.style.display = 'block';
+    detail.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    window.history.replaceState(null, '', '#' + id);
+  } catch(e) {
+    toast('Error opening report: ' + e.message, 'error');
+  }
 }
 
 function renderReportDetail() {
@@ -637,6 +643,12 @@ function openAddExpense() {
   document.getElementById('expAmount').value   = '';
   document.getElementById('expComments').value = '';
   document.getElementById('expenseMsg').innerHTML = '';
+  const rf = document.getElementById('expReceiptFile');
+  const rc = document.getElementById('expReceiptCamera');
+  const rp = document.getElementById('expReceiptPreview');
+  if (rf) rf.value = '';
+  if (rc) rc.value = '';
+  if (rp) rp.textContent = '';
   openModal('expenseModal');
   setTimeout(() => document.getElementById('expVendor').focus(), 100);
 }
@@ -686,10 +698,33 @@ async function saveExpense() {
   btn.disabled = false;
   if (!res.ok) { const d = await res.json(); msgEl.innerHTML = `<div class="error-inline">${esc(d.error)}</div>`; return; }
 
+  const data = await res.json();
+  const expId = editingExpId || data.id;
+
+  // Upload any attached receipts
+  const fileInputs = [
+    document.getElementById('expReceiptFile'),
+    document.getElementById('expReceiptCamera')
+  ];
+  const allFiles = [];
+  fileInputs.forEach(inp => { if (inp) Array.from(inp.files).forEach(f => allFiles.push(f)); });
+  if (allFiles.length && expId) {
+    const form = new FormData();
+    allFiles.forEach(f => form.append('receipts', f));
+    await fetch(`/api/expenses/${expId}/receipts`, { method: 'POST', body: form });
+  }
+
   closeModal('expenseModal');
   toast(editingExpId ? 'Expense updated.' : `Expense added: $${amount.toFixed(2)}`, 'success');
   await refreshReport();
   loadReports();
+}
+
+function previewExpReceipts(files) {
+  const prev = document.getElementById('expReceiptPreview');
+  if (!prev) return;
+  const names = Array.from(files).map(f => f.name).join(', ');
+  prev.textContent = names ? `Selected: ${names}` : '';
 }
 
 async function deleteExpense(expId) {
