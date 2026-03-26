@@ -109,6 +109,7 @@ async function initDB() {
   await sql`ALTER TABLE reports ADD COLUMN IF NOT EXISTS paid_notes TEXT`;
   await sql`ALTER TABLE reports ADD COLUMN IF NOT EXISTS paid_by TEXT`;
   await sql`ALTER TABLE reports ADD COLUMN IF NOT EXISTS last_reminder_at TEXT`;
+  await sql`ALTER TABLE tour_stops ADD COLUMN IF NOT EXISTS budget NUMERIC DEFAULT 0`;
 
   await sql`
     CREATE TABLE IF NOT EXISTS tour_stops (
@@ -321,18 +322,20 @@ app.get('/api/tour-stops', requireLogin, async (req, res) => {
 });
 
 app.post('/api/tour-stops', requireAdmin, async (req, res) => {
-  const { venue, event_date, notes } = req.body;
+  const { venue, event_date, notes, budget } = req.body;
   if (!venue || !event_date) return res.status(400).json({ error: 'Venue and date are required' });
   const id = uuidv4();
-  await sql`INSERT INTO tour_stops (id, venue, event_date, notes) VALUES (${id}, ${venue.trim()}, ${event_date}, ${notes||''})`;
+  const budgetVal = parseFloat(budget) || 0;
+  await sql`INSERT INTO tour_stops (id, venue, event_date, notes, budget) VALUES (${id}, ${venue.trim()}, ${event_date}, ${notes||''}, ${budgetVal})`;
   const stop = (await sql`SELECT * FROM tour_stops WHERE id=${id}`)[0];
   res.json(stop);
 });
 
 app.put('/api/tour-stops/:id', requireAdmin, async (req, res) => {
-  const { venue, event_date, notes } = req.body;
+  const { venue, event_date, notes, budget } = req.body;
   if (!venue || !event_date) return res.status(400).json({ error: 'Venue and date are required' });
-  await sql`UPDATE tour_stops SET venue=${venue.trim()}, event_date=${event_date}, notes=${notes||''} WHERE id=${req.params.id}`;
+  const budgetVal = parseFloat(budget) || 0;
+  await sql`UPDATE tour_stops SET venue=${venue.trim()}, event_date=${event_date}, notes=${notes||''}, budget=${budgetVal} WHERE id=${req.params.id}`;
   const stop = (await sql`SELECT * FROM tour_stops WHERE id=${req.params.id}`)[0];
   res.json(stop);
 });
@@ -403,8 +406,20 @@ app.get('/api/admin/analytics', requireAdmin, async (req, res) => {
     venueMap[k].report_ids.add(r.report_id);
     venueMap[k].total += parseFloat(r.amount || 0);
   });
+  const budgetRaw = await getSetting('budget_template');
+  const budget = budgetRaw ? JSON.parse(budgetRaw) : { total_per_show: 0, categories: {} };
+  const globalShowBudget = parseFloat(budget.total_per_show) || 0;
+
+  // Build per-venue budget lookup from tour_stops
+  const tourStops = await sql`SELECT venue, budget FROM tour_stops`;
+  const stopBudgetMap = {};
+  tourStops.forEach(s => { stopBudgetMap[s.venue] = parseFloat(s.budget) || 0; });
+
   const byVenue = Object.values(venueMap)
-    .map(v => ({ venue: v.venue, date: v.date, people: v.people.size, report_count: v.report_ids.size, total: v.total }))
+    .map(v => {
+      const perShowBudget = stopBudgetMap[v.venue] > 0 ? stopBudgetMap[v.venue] : globalShowBudget;
+      return { venue: v.venue, date: v.date, people: v.people.size, report_count: v.report_ids.size, total: v.total, budget: perShowBudget };
+    })
     .sort((a, b) => b.total - a.total);
 
   // Summary
@@ -425,9 +440,6 @@ app.get('/api/admin/analytics', requireAdmin, async (req, res) => {
     username: r.username, event_location: r.event_location, event_date: r.event_date,
     status: r.status, vendor: r.vendor, purpose: r.purpose, amount: parseFloat(r.amount || 0), comments: r.comments
   }));
-
-  const budgetRaw = await getSetting('budget_template');
-  const budget = budgetRaw ? JSON.parse(budgetRaw) : { total_per_show: 0, categories: {} };
   res.json({ byCategory, byUser, byVenue, summary, detail, locations: allLocations.map(r => r.event_location), budget });
   } catch(e) { console.error('Analytics error:', e); res.status(500).json({ error: e.message }); }
 });
@@ -1488,6 +1500,22 @@ app.get('/api/admin/budget', requireAdmin, async (req, res) => {
 app.post('/api/admin/budget', requireAdmin, async (req, res) => {
   const { total_per_show, categories } = req.body;
   await upsertSetting('budget_template', JSON.stringify({ total_per_show: parseFloat(total_per_show)||0, categories: categories||{} }));
+  res.json({ success: true });
+});
+
+// ─── Alert Thresholds ──────────────────────────────────────────────────────
+
+app.get('/api/admin/alert-thresholds', requireAdmin, async (req, res) => {
+  const raw = await getSetting('alert_thresholds');
+  res.json(raw ? JSON.parse(raw) : { venue_warn_pct: 80, user_warn_pct: 50 });
+});
+
+app.post('/api/admin/alert-thresholds', requireAdmin, async (req, res) => {
+  const { venue_warn_pct, user_warn_pct } = req.body;
+  await upsertSetting('alert_thresholds', JSON.stringify({
+    venue_warn_pct: parseInt(venue_warn_pct) || 80,
+    user_warn_pct:  parseInt(user_warn_pct)  || 50
+  }));
   res.json({ success: true });
 });
 

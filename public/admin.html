@@ -554,20 +554,55 @@
         <div class="card" style="margin-top:20px;">
           <div class="card-header"><div class="card-title">💰 Budget Template</div><div class="card-subtitle">Default spending limits applied to every show</div></div>
           <div class="card-body">
+            <div style="background:#f0f7ff;border:1px solid #bfdbfe;border-radius:8px;padding:14px 16px;margin-bottom:20px;font-size:13px;color:#1e40af;line-height:1.6;">
+              <strong>How this works:</strong> Set your expected max spend per show and optional limits per expense category. These numbers power the <strong>Analytics flags</strong> — when spending gets close to or exceeds a limit, you'll see a 🟡 or 🔴 alert automatically. Leave any field blank to skip tracking that category.
+            </div>
             <div class="form-group">
               <label>Total Budget Per Show</label>
+              <div style="font-size:12px;color:#6b7280;margin-bottom:6px;">The maximum you expect to spend at any single venue/show (e.g. $3,000). This is your overall ceiling.</div>
               <div style="position:relative;">
                 <span style="position:absolute;left:12px;top:50%;transform:translateY(-50%);color:#6b7280;">$</span>
                 <input type="number" id="budgetTotal" class="form-control" placeholder="e.g. 3000" style="padding-left:24px;">
               </div>
             </div>
-            <div style="font-size:12px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:0.6px;margin:16px 0 10px;">Per-Category Limits</div>
+            <div style="font-size:12px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:0.6px;margin:16px 0 4px;">Per-Category Limits</div>
+            <div style="font-size:12px;color:#6b7280;margin-bottom:12px;">Optional sub-limits within the show budget. Example: cap Food &amp; Beverage at $500 per show. Leave blank = no limit tracked.</div>
             <div id="budgetCategoryInputs" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
               <!-- populated by JS -->
             </div>
           </div>
           <div class="modal-footer" style="border-top:1px solid #e5e7eb;">
             <button class="btn btn-primary" onclick="saveBudget()">Save Budget</button>
+          </div>
+        </div>
+
+        <div class="card" style="margin-top:20px;">
+          <div class="card-header"><div class="card-title">🔔 Alert Thresholds</div><div class="card-subtitle">Control when issues are flagged in the Analytics panel</div></div>
+          <div class="card-body">
+            <div style="background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:14px 16px;margin-bottom:20px;font-size:13px;color:#92400e;line-height:1.6;">
+              <strong>How this works:</strong> These percentages control the sensitivity of your 🟡 yellow warning flags in Analytics. Lower numbers = earlier warnings. Higher numbers = only flag when it's a real problem.
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label>Venue Near-Budget Warning (%)</label>
+                <div style="position:relative;">
+                  <input type="number" id="threshVenueWarn" class="form-control" min="1" max="99" placeholder="80" style="padding-right:32px;">
+                  <span style="position:absolute;right:12px;top:50%;transform:translateY(-50%);color:#6b7280;font-size:13px;">%</span>
+                </div>
+                <div style="font-size:12px;color:#6b7280;margin-top:4px;">Flag a venue 🟡 yellow when it reaches this % of the show budget. Default: 80%</div>
+              </div>
+              <div class="form-group">
+                <label>User Overspend Warning (% above team avg)</label>
+                <div style="position:relative;">
+                  <input type="number" id="threshUserWarn" class="form-control" min="1" placeholder="50" style="padding-right:32px;">
+                  <span style="position:absolute;right:12px;top:50%;transform:translateY(-50%);color:#6b7280;font-size:13px;">%</span>
+                </div>
+                <div style="font-size:12px;color:#6b7280;margin-top:4px;">Flag a user 🟡 yellow when they spend this % more than the team average. Default: 50%</div>
+              </div>
+            </div>
+          </div>
+          <div class="modal-footer" style="border-top:1px solid #e5e7eb;">
+            <button class="btn btn-primary" onclick="saveAlertThresholds()">Save Thresholds</button>
           </div>
         </div>
       </div>
@@ -586,7 +621,17 @@
               <div class="form-group"><label>City / Venue <span class="required">*</span></label><input type="text" id="newStopVenue" class="form-control" placeholder="e.g. Nashville, TN – Ryman Auditorium"></div>
               <div class="form-group"><label>Event Date <span class="required">*</span></label><input type="date" id="newStopDate" class="form-control"></div>
             </div>
-            <div class="form-group mb-0"><label>Notes (optional)</label><input type="text" id="newStopNotes" class="form-control" placeholder="Additional details…"></div>
+            <div class="form-row">
+              <div class="form-group">
+                <label>Show Budget (optional)</label>
+                <div style="position:relative;">
+                  <span style="position:absolute;left:12px;top:50%;transform:translateY(-50%);color:#6b7280;">$</span>
+                  <input type="number" id="newStopBudget" class="form-control" placeholder="Leave blank to use default" style="padding-left:24px;">
+                </div>
+                <div style="font-size:12px;color:#6b7280;margin-top:4px;">Override the global budget for this show only</div>
+              </div>
+              <div class="form-group"><label>Notes (optional)</label><input type="text" id="newStopNotes" class="form-control" placeholder="Additional details…"></div>
+            </div>
             <div id="addStopMsg"></div>
           </div>
           <div class="modal-footer" style="border-top:1px solid #e5e7eb;">
@@ -598,8 +643,8 @@
         <div class="card">
           <div class="table-wrapper">
             <table>
-              <thead><tr><th>#</th><th>City / Venue</th><th>Event Date</th><th>Day</th><th>Status</th><th>Actions</th></tr></thead>
-              <tbody id="tourStopsBody"><tr><td colspan="6"><div class="spinner"></div></td></tr></tbody>
+              <thead><tr><th>#</th><th>City / Venue</th><th>Event Date</th><th>Day</th><th>Budget</th><th>Status</th><th>Actions</th></tr></thead>
+              <tbody id="tourStopsBody"><tr><td colspan="7"><div class="spinner"></div></td></tr></tbody>
             </table>
           </div>
         </div>
@@ -628,9 +673,19 @@
           <input type="date" id="editStopDate" class="form-control">
         </div>
       </div>
-      <div class="form-group mb-0">
-        <label>Notes (optional)</label>
-        <input type="text" id="editStopNotes" class="form-control" placeholder="Additional details…">
+      <div class="form-row">
+        <div class="form-group">
+          <label>Show Budget (optional)</label>
+          <div style="position:relative;">
+            <span style="position:absolute;left:12px;top:50%;transform:translateY(-50%);color:#6b7280;">$</span>
+            <input type="number" id="editStopBudget" class="form-control" placeholder="Leave blank to use default" style="padding-left:24px;">
+          </div>
+          <div style="font-size:12px;color:#6b7280;margin-top:4px;">Override global budget for this show only</div>
+        </div>
+        <div class="form-group mb-0">
+          <label>Notes (optional)</label>
+          <input type="text" id="editStopNotes" class="form-control" placeholder="Additional details…">
+        </div>
       </div>
     </div>
     <div class="modal-footer">

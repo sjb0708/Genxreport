@@ -158,7 +158,7 @@ function showPanel(name) {
     loadAllReports();
   }
   if (name === 'users')     loadUsers();
-  if (name === 'settings')  { loadSmtpSettings(); loadAdminNotifPref(); loadBudget(); }
+  if (name === 'settings')  { loadSmtpSettings(); loadAdminNotifPref(); loadBudget(); loadAlertThresholds(); }
   if (name === 'analytics') loadAnalytics();
   if (name === 'export')    loadUserFilter('exportUser');
   if (name === 'tourstops') loadTourStops();
@@ -623,9 +623,15 @@ async function loadAnalytics() {
   if (to)       params.set('to',       to);
   if (location) params.set('location', location);
 
-  const res = await fetch('/api/admin/analytics?' + params.toString());
+  const [res, threshRes] = await Promise.all([
+    fetch('/api/admin/analytics?' + params.toString()),
+    fetch('/api/admin/alert-thresholds')
+  ]);
   if (!res.ok) { toast('Analytics failed to load.', 'error'); return; }
   const { byCategory, byUser, byVenue, summary, detail, locations, budget } = await res.json();
+  const thresh = threshRes.ok ? await threshRes.json() : {};
+  const venueWarnPct = (thresh.venue_warn_pct ?? 80) / 100;
+  const userWarnPct  = (thresh.user_warn_pct  ?? 50) / 100;
 
   // Refresh location dropdown
   const locSel = document.getElementById('analyticsLocation');
@@ -646,15 +652,15 @@ async function loadAnalytics() {
   const avgVenue = summary.venue_count > 0 ? grandTotal / summary.venue_count : 0;
   document.getElementById('anStatAvgVenue').textContent = fmt(avgVenue);
 
-  // ── Build flagged issues list
+  // ── Build flagged issues list (each venue now has its own .budget from server)
   const flags = [];
-  const venueBudget = budget?.total_per_show || 0;
 
   byVenue.forEach(v => {
-    if (venueBudget > 0 && v.total > venueBudget) {
-      flags.push({ level: 'red', msg: `<strong>${esc(v.venue)}</strong> is over budget — spent ${fmt(v.total)} vs ${fmt(venueBudget)} limit (over by ${fmt(v.total - venueBudget)})` });
-    } else if (venueBudget > 0 && v.total > venueBudget * 0.8) {
-      flags.push({ level: 'yellow', msg: `<strong>${esc(v.venue)}</strong> is near budget — spent ${fmt(v.total)} of ${fmt(venueBudget)} (${((v.total/venueBudget)*100).toFixed(0)}%)` });
+    const vb = v.budget || 0;
+    if (vb > 0 && v.total > vb) {
+      flags.push({ level: 'red', msg: `<strong>${esc(v.venue)}</strong> is over budget — spent ${fmt(v.total)} vs ${fmt(vb)} limit (over by ${fmt(v.total - vb)})` });
+    } else if (vb > 0 && v.total > vb * venueWarnPct) {
+      flags.push({ level: 'yellow', msg: `<strong>${esc(v.venue)}</strong> is near budget — spent ${fmt(v.total)} of ${fmt(vb)} (${((v.total/vb)*100).toFixed(0)}%)` });
     }
   });
 
@@ -667,7 +673,7 @@ async function loadAnalytics() {
 
   const userAvg = byUser.length > 1 ? grandTotal / byUser.length : 0;
   byUser.forEach(u => {
-    if (byUser.length > 1 && u.total > userAvg * 1.5) {
+    if (byUser.length > 1 && u.total > userAvg * (1 + userWarnPct)) {
       flags.push({ level: 'yellow', msg: `<strong>${esc(u.username)}</strong> spent ${fmt(u.total)} — ${((u.total/userAvg - 1)*100).toFixed(0)}% above the team average of ${fmt(userAvg)}` });
     }
   });
@@ -723,8 +729,8 @@ async function loadAnalytics() {
   const ctxPerson = document.getElementById('chartPerson');
   if (ctxPerson && byUser.length) {
     const personColors = byUser.map(u => {
-      if (byUser.length > 1 && u.total > userAvg * 1.5) return '#dc2626';
-      if (byUser.length > 1 && u.total > userAvg * 1.2) return '#d97706';
+      if (byUser.length > 1 && u.total > userAvg * (1 + userWarnPct)) return '#dc2626';
+      if (byUser.length > 1 && u.total > userAvg * (1 + userWarnPct * 0.6)) return '#d97706';
       return '#1a3f8c';
     });
     _chartPerson = new Chart(ctxPerson, {
@@ -761,8 +767,9 @@ async function loadAnalytics() {
   const venuesSorted = [...byVenue].sort((a,b) => (a.date||'').localeCompare(b.date||''));
   if (ctxVenue && venuesSorted.length) {
     const vColors = venuesSorted.map(v => {
-      if (venueBudget > 0 && v.total > venueBudget) return '#dc2626';
-      if (venueBudget > 0 && v.total > venueBudget * 0.8) return '#d97706';
+      const vb = v.budget || 0;
+      if (vb > 0 && v.total > vb) return '#dc2626';
+      if (vb > 0 && v.total > vb * venueWarnPct) return '#d97706';
       return '#1a3f8c';
     });
     _chartVenue = new Chart(ctxVenue, {
@@ -776,14 +783,14 @@ async function loadAnalytics() {
             backgroundColor: vColors,
             borderRadius: 4
           },
-          ...(venueBudget > 0 ? [{
+          ...(venuesSorted.some(v => v.budget > 0) ? [{
             label: 'Budget',
-            data: venuesSorted.map(() => venueBudget),
+            data: venuesSorted.map(v => v.budget > 0 ? v.budget : null),
             type: 'line',
             borderColor: '#9ca3af',
             borderDash: [6, 3],
             borderWidth: 2,
-            pointRadius: 0,
+            pointRadius: 4,
             fill: false
           }] : [])
         ]
@@ -791,7 +798,7 @@ async function loadAnalytics() {
       options: {
         responsive: true, maintainAspectRatio: false,
         plugins: {
-          legend: { display: venueBudget > 0, labels: { font: { size: 11 } } },
+          legend: { display: venuesSorted.some(v => v.budget > 0), labels: { font: { size: 11 } } },
           tooltip: { callbacks: { label: ctx => ` ${ctx.dataset.label}: ${fmt(ctx.raw)}` } }
         },
         scales: {
@@ -810,12 +817,13 @@ async function loadAnalytics() {
         const pct    = grandTotal > 0 ? ((v.total / grandTotal) * 100).toFixed(1) : '0.0';
         const avgPer = v.people > 0 ? v.total / v.people : 0;
         const isHigh = byVenue.length > 1 && v.total > (grandTotal / byVenue.length) * 1.5;
+        const vb = v.budget || 0;
         let budgetStatus = '<span style="color:#d1d5db;font-size:12px;">No budget set</span>';
-        if (venueBudget > 0) {
-          const bp = (v.total / venueBudget) * 100;
+        if (vb > 0) {
+          const bp = (v.total / vb) * 100;
           const color = bp > 100 ? '#dc2626' : bp > 80 ? '#d97706' : '#16a34a';
           const icon  = bp > 100 ? '🔴' : bp > 80 ? '🟡' : '🟢';
-          budgetStatus = `<span style="color:${color};font-size:12px;font-weight:700;">${icon} ${bp.toFixed(0)}% of ${fmt(venueBudget)}</span>`;
+          budgetStatus = `<span style="color:${color};font-size:12px;font-weight:700;">${icon} ${bp.toFixed(0)}% of ${fmt(vb)}</span>`;
         }
         return `<tr style="cursor:pointer;${isHigh ? 'background:#fff7f7;' : i===0 ? 'background:#f0f7ff;' : ''}"
                     onclick="document.getElementById('analyticsLocation').value='${esc(v.venue)}';loadAnalytics();">
@@ -839,7 +847,7 @@ async function loadAnalytics() {
   if (userTitle) userTitle.textContent = ctxLabel ? `Cost by Person — ${ctxLabel}` : 'Cost by Person';
   document.getElementById('anUserBody').innerHTML = byUser.length
     ? byUser.map((r, i) => {
-        const isHigh  = byUser.length > 1 && r.total > userAvg * 1.5;
+        const isHigh  = byUser.length > 1 && r.total > userAvg * (1 + userWarnPct);
         const vsAvg   = userAvg > 0 ? ((r.total - userAvg) / userAvg * 100) : 0;
         const vsLabel = userAvg > 0 ? `${vsAvg >= 0 ? '+' : ''}${vsAvg.toFixed(0)}%` : '—';
         const vsColor = vsAvg > 50 ? '#dc2626' : vsAvg > 20 ? '#d97706' : '#16a34a';
@@ -953,6 +961,27 @@ async function saveBudget() {
   });
   if (!res.ok) { toast('Failed to save budget.', 'error'); return; }
   toast('Budget template saved!', 'success');
+}
+
+// ─── Alert Thresholds ──────────────────────────────────────────────────────
+
+async function loadAlertThresholds() {
+  const res = await fetch('/api/admin/alert-thresholds');
+  if (!res.ok) return;
+  const t = await res.json();
+  document.getElementById('threshVenueWarn').value = t.venue_warn_pct ?? 80;
+  document.getElementById('threshUserWarn').value  = t.user_warn_pct  ?? 50;
+}
+
+async function saveAlertThresholds() {
+  const venue_warn_pct = parseInt(document.getElementById('threshVenueWarn').value) || 80;
+  const user_warn_pct  = parseInt(document.getElementById('threshUserWarn').value)  || 50;
+  const res = await fetch('/api/admin/alert-thresholds', {
+    method: 'POST', headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({ venue_warn_pct, user_warn_pct })
+  });
+  if (!res.ok) { toast('Failed to save thresholds.', 'error'); return; }
+  toast('Alert thresholds saved!', 'success');
 }
 
 async function loadUsers() {
@@ -1212,11 +1241,12 @@ function renderTourStops() {
   const today  = new Date().toISOString().slice(0, 10);
   const tbody  = document.getElementById('tourStopsBody');
   if (!tourStopsData.length) {
-    tbody.innerHTML = `<tr><td colspan="6" class="table-empty"><div class="table-empty-icon">📍</div><p>No tour stops added yet.</p></td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="7" class="table-empty"><div class="table-empty-icon">📍</div><p>No tour stops added yet.</p></td></tr>`;
     return;
   }
 
   const days = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+  const fmt  = n => '$' + parseFloat(n||0).toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
 
   tbody.innerHTML = tourStopsData.map((s, i) => {
     const isPast     = s.event_date < today;
@@ -1229,6 +1259,9 @@ function renderTourStops() {
       : isPast
         ? '<span style="color:#9ca3af;font-size:12px;">Past</span>'
         : '<span class="badge badge-approved">Upcoming</span>';
+    const budgetHtml = s.budget > 0
+      ? `<strong style="color:#1a3f8c;">${fmt(s.budget)}</strong>`
+      : `<span style="color:#d1d5db;font-size:12px;">Default</span>`;
 
     return `
       <tr style="${isPast ? 'opacity:0.55;' : ''}">
@@ -1236,6 +1269,7 @@ function renderTourStops() {
         <td><strong>${esc(s.venue)}</strong>${s.notes ? `<br><span style="font-size:11px;color:#9ca3af;">${esc(s.notes)}</span>` : ''}</td>
         <td><strong>${formatted}</strong></td>
         <td style="color:#6b7280;">${dayName}</td>
+        <td>${budgetHtml}</td>
         <td>${statusHtml}</td>
         <td style="display:flex;gap:6px;">
           <button class="action-btn action-btn-gray" onclick="openEditTourStop('${s.id}')">✎ Edit</button>
@@ -1247,19 +1281,21 @@ function renderTourStops() {
 
 function openAddTourStop() {
   document.getElementById('addStopForm').style.display = 'block';
-  document.getElementById('newStopVenue').value = '';
-  document.getElementById('newStopDate').value  = '';
-  document.getElementById('newStopNotes').value = '';
+  document.getElementById('newStopVenue').value  = '';
+  document.getElementById('newStopDate').value   = '';
+  document.getElementById('newStopNotes').value  = '';
+  document.getElementById('newStopBudget').value = '';
   document.getElementById('addStopMsg').innerHTML = '';
   document.getElementById('newStopVenue').focus();
   document.getElementById('addStopForm').scrollIntoView({ behavior:'smooth' });
 }
 
 async function saveNewTourStop() {
-  const venue = document.getElementById('newStopVenue').value.trim();
-  const date  = document.getElementById('newStopDate').value;
-  const notes = document.getElementById('newStopNotes').value.trim();
-  const msgEl = document.getElementById('addStopMsg');
+  const venue  = document.getElementById('newStopVenue').value.trim();
+  const date   = document.getElementById('newStopDate').value;
+  const notes  = document.getElementById('newStopNotes').value.trim();
+  const budget = parseFloat(document.getElementById('newStopBudget').value) || 0;
+  const msgEl  = document.getElementById('addStopMsg');
   msgEl.innerHTML = '';
 
   if (!venue) { msgEl.innerHTML = '<div class="error-inline">Venue is required.</div>'; return; }
@@ -1267,7 +1303,7 @@ async function saveNewTourStop() {
 
   const res  = await fetch('/api/tour-stops', {
     method:'POST', headers:{'Content-Type':'application/json'},
-    body: JSON.stringify({ venue, event_date: date, notes })
+    body: JSON.stringify({ venue, event_date: date, notes, budget })
   });
   const data = await res.json();
   if (!res.ok) { msgEl.innerHTML = `<div class="error-inline">${esc(data.error)}</div>`; return; }
@@ -1280,10 +1316,11 @@ async function saveNewTourStop() {
 function openEditTourStop(stopId) {
   const stop = tourStopsData.find(s => s.id === stopId);
   if (!stop) return;
-  document.getElementById('editStopId').value    = stopId;
-  document.getElementById('editStopVenue').value = stop.venue || '';
-  document.getElementById('editStopDate').value  = stop.event_date || '';
-  document.getElementById('editStopNotes').value = stop.notes || '';
+  document.getElementById('editStopId').value     = stopId;
+  document.getElementById('editStopVenue').value  = stop.venue || '';
+  document.getElementById('editStopDate').value   = stop.event_date || '';
+  document.getElementById('editStopNotes').value  = stop.notes || '';
+  document.getElementById('editStopBudget').value = stop.budget > 0 ? stop.budget : '';
   openModal('editTourStopModal');
 }
 
@@ -1292,10 +1329,11 @@ async function saveEditTourStop() {
   const venue  = document.getElementById('editStopVenue').value.trim();
   const date   = document.getElementById('editStopDate').value.trim();
   const notes  = document.getElementById('editStopNotes').value.trim();
+  const budget = parseFloat(document.getElementById('editStopBudget').value) || 0;
   if (!venue || !date) { toast('Venue and date are required.', 'error'); return; }
   const res = await fetch(`/api/tour-stops/${stopId}`, {
     method:'PUT', headers:{'Content-Type':'application/json'},
-    body: JSON.stringify({ venue, event_date: date, notes })
+    body: JSON.stringify({ venue, event_date: date, notes, budget })
   });
   if (!res.ok) { toast('Update failed.', 'error'); return; }
   closeModal('editTourStopModal');
