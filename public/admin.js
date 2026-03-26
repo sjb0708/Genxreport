@@ -320,38 +320,79 @@ async function openReportDetail(reportId) {
   if (!res.ok) { toast('Could not load report.', 'error'); return; }
   const r = await res.json();
 
-  const statusActions = () => {
-    if (r.status === 'submitted') return `
-      <button class="action-btn" style="background:#ede9fe;color:#6d28d9;" onclick="markUnderReviewModal('${r.id}')">🔍 Under Review</button>
-      <button class="action-btn action-btn-green" onclick="quickApproveModal('${r.id}')">✓ Approve</button>
-      <button class="action-btn action-btn-red" onclick="openRejectModal('${r.id}')">✕ Reject</button>`;
-    if (r.status === 'under_review') return `
-      <button class="action-btn action-btn-green" onclick="quickApproveModal('${r.id}')">✓ Approve</button>
-      <button class="action-btn action-btn-red" onclick="openRejectModal('${r.id}')">✕ Reject</button>`;
-    if (r.status === 'approved') return `
-      <button class="action-btn" style="background:#d1fae5;color:#065f46;" onclick="openPaidModal('${r.id}')">💳 Mark Paid</button>
-      <button class="action-btn action-btn-gray" onclick="reopenReportModal('${r.id}')">↩ Reopen</button>`;
-    if (r.status === 'rejected') return `
-      <button class="action-btn action-btn-gray" onclick="reopenReportModal('${r.id}')">↩ Reopen</button>`;
-    return '';
-  };
-
   const total = (r.expenses||[]).reduce((s,e) => s + parseFloat(e.amount||0), 0);
 
+  // ── Status progress bar
+  const steps = ['submitted','under_review','approved','paid'];
+  const rejFlow = r.status === 'rejected';
+  const currentIdx = steps.indexOf(r.status);
+  const stepLabels = { submitted:'Submitted', under_review:'Under Review', approved:'Approved', paid:'Paid' };
+  const progressBar = rejFlow
+    ? `<div style="background:#fee2e2;border:1px solid #fca5a5;border-radius:10px;padding:12px 16px;display:flex;align-items:center;gap:10px;font-size:13px;font-weight:700;color:#dc2626;">
+        ❌ REJECTED${r.admin_notes ? ` — "${esc(r.admin_notes)}"` : ''}
+       </div>`
+    : `<div style="display:flex;align-items:center;gap:0;margin-bottom:4px;">
+        ${steps.map((s,i) => {
+          const done    = i < currentIdx;
+          const current = i === currentIdx;
+          const bg      = current ? '#1a3f8c' : done ? '#d1fae5' : '#f3f4f6';
+          const color   = current ? '#fff' : done ? '#065f46' : '#9ca3af';
+          const border  = current ? '#1a3f8c' : done ? '#6ee7b7' : '#e5e7eb';
+          const arrow   = i < steps.length-1
+            ? `<div style="width:24px;height:2px;background:${done||current?'#1a3f8c':'#e5e7eb'};flex-shrink:0;"></div>` : '';
+          return `<div style="display:flex;align-items:center;flex:1;min-width:0;">
+            <div style="flex:1;text-align:center;padding:7px 4px;border-radius:8px;border:1.5px solid ${border};background:${bg};color:${color};font-size:11px;font-weight:700;white-space:nowrap;">
+              ${current?'▶ ':''}${stepLabels[s]}
+            </div>${arrow}
+          </div>`;
+        }).join('')}
+       </div>`;
+
+  // ── Admin action buttons for current status
+  const actionSection = () => {
+    let heading = '', btns = '';
+    if (r.status === 'submitted') {
+      heading = 'Next Step: Review this report';
+      btns = `<button class="btn btn-ghost btn-sm" onclick="markUnderReviewModal('${r.id}')">🔍 Mark Under Review</button>
+              <button class="btn btn-primary btn-sm" onclick="quickApproveModal('${r.id}')">✓ Approve</button>
+              <button class="btn btn-danger btn-sm" onclick="openRejectModal('${r.id}')">✕ Reject</button>`;
+    } else if (r.status === 'under_review') {
+      heading = 'Next Step: Make a decision';
+      btns = `<button class="btn btn-primary btn-sm" onclick="quickApproveModal('${r.id}')">✓ Approve Report</button>
+              <button class="btn btn-danger btn-sm" onclick="openRejectModal('${r.id}')">✕ Reject Report</button>`;
+    } else if (r.status === 'approved') {
+      heading = 'Next Step: Issue payment';
+      btns = `<button class="btn btn-primary btn-sm" style="background:#065f46;" onclick="openPaidModal('${r.id}')">💳 Mark as Paid</button>
+              <button class="btn btn-ghost btn-sm" onclick="reopenReportModal('${r.id}')">↩ Reopen to Draft</button>`;
+    } else if (r.status === 'paid') {
+      heading = 'Payment complete';
+      btns = `<span style="color:#065f46;font-size:13px;">✅ Paid on ${r.paid_at?r.paid_at.slice(0,10):''}${r.paid_notes?' — '+esc(r.paid_notes):''}</span>`;
+    } else if (r.status === 'rejected') {
+      heading = 'Report rejected — send back?';
+      btns = `<button class="btn btn-ghost btn-sm" onclick="reopenReportModal('${r.id}')">↩ Reopen to Draft</button>`;
+    }
+    return heading ? `
+      <div style="background:#f8fafc;border:1px solid #e5e7eb;border-radius:10px;padding:14px 16px;margin-bottom:16px;">
+        <div style="font-size:11px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px;">Admin Actions — ${heading}</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+          <a href="/api/reports/${r.id}/pdf" target="_blank" class="btn btn-ghost btn-sm">📄 Download PDF</a>
+          ${btns}
+        </div>
+      </div>` : '';
+  };
+
   document.getElementById('reportDetailModalBody').innerHTML = `
-    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:16px;">
-      <div>
-        <div style="font-size:18px;font-weight:800;">${esc(r.event_location||'—')}</div>
-        <div style="font-size:12px;color:#6b7280;margin-top:4px;">Event: ${r.event_date||'—'} · Submitted by: ${esc(r.username||'—')} · Pay to: ${esc(r.submit_payment_to||'—')} · Method: ${r.payment_method||'check'}</div>
-      </div>
-      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
-        <span class="badge badge-${r.status}">${statusLabel(r.status)}</span>
-        <a href="/api/reports/${r.id}/pdf" target="_blank" class="action-btn action-btn-blue">📄 PDF</a>
-        ${statusActions()}
+    <div style="margin-bottom:14px;">
+      <div style="font-size:18px;font-weight:800;">${esc(r.event_location||'—')}</div>
+      <div style="font-size:12px;color:#6b7280;margin-top:3px;">
+        Event: ${r.event_date||'—'} &nbsp;·&nbsp; Submitted by: <strong>${esc(r.username||'—')}</strong> &nbsp;·&nbsp; Pay to: <strong>${esc(r.submit_payment_to||'—')}</strong> &nbsp;·&nbsp; Method: ${r.payment_method||'check'}
       </div>
     </div>
-    ${r.admin_notes ? `<div style="background:#fef3c7;border:1px solid #fcd34d;border-radius:8px;padding:10px 14px;font-size:13px;margin-bottom:14px;"><strong>Notes:</strong> ${esc(r.admin_notes)}</div>` : ''}
-    ${r.paid_at ? `<div style="background:#d1fae5;border:1px solid #6ee7b7;border-radius:8px;padding:10px 14px;font-size:13px;margin-bottom:14px;">💳 <strong>Paid</strong> on ${r.paid_at.slice(0,10)}${r.paid_notes?' — '+esc(r.paid_notes):''}</div>` : ''}
+
+    <div style="margin-bottom:16px;">${progressBar}</div>
+
+    ${actionSection()}
+
     <table style="width:100%;border-collapse:collapse;font-size:13px;">
       <thead><tr style="border-bottom:2px solid #e5e7eb;">
         <th style="text-align:left;padding:8px 10px;color:#6b7280;font-weight:600;">Vendor</th>
@@ -378,6 +419,7 @@ async function openReportDetail(reportId) {
         <td style="padding:10px;text-align:right;font-weight:800;font-size:16px;color:#1a3f8c;">$${total.toFixed(2)}</td>
       </tr></tfoot>
     </table>
+
     <div style="margin-top:18px;padding-top:14px;border-top:1px solid #e5e7eb;">
       <div style="font-size:11px;font-weight:700;color:#9ca3af;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;">Timeline</div>
       <div style="display:flex;flex-direction:column;gap:5px;font-size:12px;color:#6b7280;">
