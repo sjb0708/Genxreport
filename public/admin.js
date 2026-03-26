@@ -377,34 +377,42 @@ async function openReportDetail(reportId) {
         <td colspan="2" style="padding:10px;font-weight:800;font-size:14px;">TOTAL</td>
         <td style="padding:10px;text-align:right;font-weight:800;font-size:16px;color:#1a3f8c;">$${total.toFixed(2)}</td>
       </tr></tfoot>
-    </table>`;
+    </table>
+    <div style="margin-top:18px;padding-top:14px;border-top:1px solid #e5e7eb;">
+      <div style="font-size:11px;font-weight:700;color:#9ca3af;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;">Timeline</div>
+      <div style="display:flex;flex-direction:column;gap:5px;font-size:12px;color:#6b7280;">
+        ${r.created_at   ? `<div>📝 <strong>Created</strong> — ${fmtTs(r.created_at)}</div>` : ''}
+        ${r.submitted_at ? `<div>📤 <strong>Submitted</strong> by ${esc(r.username||'—')} — ${fmtTs(r.submitted_at)}</div>` : ''}
+        ${r.reviewed_at && r.status === 'under_review' ? `<div>🔍 <strong>Under Review</strong> — ${fmtTs(r.reviewed_at)}</div>` : ''}
+        ${r.reviewed_at && r.status === 'approved'     ? `<div>✅ <strong>Approved</strong> — ${fmtTs(r.reviewed_at)}</div>` : ''}
+        ${r.reviewed_at && r.status === 'rejected'     ? `<div>❌ <strong>Rejected</strong>${r.admin_notes?' — "'+esc(r.admin_notes)+'"':''} — ${fmtTs(r.reviewed_at)}</div>` : ''}
+        ${r.paid_at      ? `<div>💳 <strong>Paid</strong>${r.paid_notes?' — '+esc(r.paid_notes):''} — ${fmtTs(r.paid_at)}</div>` : ''}
+      </div>
+    </div>`;
 
   openModal('reportDetailModal');
 }
 
-// These variants close the modal and refresh after acting
+// These variants refresh the modal in-place after acting
 async function markUnderReviewModal(id) {
   const res = await fetch(`/api/reports/${id}/under_review`, { method:'POST' });
   if (!res.ok) { toast('Failed.', 'error'); return; }
-  closeModal('reportDetailModal');
   toast('Marked as Under Review.', 'info');
-  loadAllReports(); loadDashboard();
+  openReportDetail(id); loadAllReports(); loadDashboard();
 }
 async function quickApproveModal(id) {
   const res = await fetch(`/api/reports/${id}/approve`, {
     method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({notes:''})
   });
   if (!res.ok) { toast('Failed.', 'error'); return; }
-  closeModal('reportDetailModal');
   toast('Report approved! ✓', 'success');
-  loadAllReports(); loadDashboard();
+  openReportDetail(id); loadAllReports(); loadDashboard();
 }
 async function reopenReportModal(id) {
   const res = await fetch(`/api/reports/${id}/reopen`, { method:'POST' });
   if (!res.ok) { toast('Failed.', 'error'); return; }
-  closeModal('reportDetailModal');
   toast('Report reopened to draft.', 'info');
-  loadAllReports(); loadDashboard();
+  openReportDetail(id); loadAllReports(); loadDashboard();
 }
 
 async function markUnderReview(reportId, btn) {
@@ -648,6 +656,13 @@ async function uploadLogo(file) {
 
 function esc(str) {
   return String(str||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function fmtTs(ts) {
+  if (!ts) return '—';
+  const d = new Date(ts);
+  return d.toLocaleDateString('en-US', { month:'short', day:'numeric', year:'numeric' }) +
+    ' ' + d.toLocaleTimeString('en-US', { hour:'numeric', minute:'2-digit' });
 }
 
 // ─── Tour Stops ────────────────────────────────────────────

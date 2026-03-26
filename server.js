@@ -756,17 +756,36 @@ const logoStorage = multer.diskStorage({
 });
 const logoUpload = multer({ storage: logoStorage, limits: { fileSize: 5 * 1024 * 1024 } });
 
-app.post('/api/logo', requireAdmin, logoUpload.single('logo'), (req, res) => {
+app.post('/api/logo', requireAdmin, logoUpload.single('logo'), async (req, res) => {
   if (!req.file) return res.status(400).json({ error: 'No file' });
+  // Store as base64 in DB so it persists on Vercel
+  const data = fs.readFileSync(req.file.path);
+  const mime = req.file.mimetype || 'image/png';
+  const b64  = `data:${mime};base64,${data.toString('base64')}`;
+  await upsertSetting('logo_b64', b64);
+  await upsertSetting('logo_ext', path.extname(req.file.originalname).toLowerCase());
   res.json({ path: `/assets/${req.file.filename}` });
 });
 
-app.get('/api/logo', (req, res) => {
+app.get('/api/logo', async (req, res) => {
+  // Check DB first (persists on Vercel)
+  const b64 = await getSetting('logo_b64');
+  if (b64) return res.json({ path: '/api/logo/img' });
+  // Fallback: check filesystem
   const dir = path.join(__dir, 'public', 'assets');
   for (const ext of ['.png','.jpg','.jpeg','.gif','.svg','.webp']) {
     if (fs.existsSync(path.join(dir, 'logo'+ext))) return res.json({ path: `/assets/logo${ext}` });
   }
   res.json({ path: null });
+});
+
+app.get('/api/logo/img', async (req, res) => {
+  const b64 = await getSetting('logo_b64');
+  if (!b64) return res.status(404).send('No logo');
+  const [header, data] = b64.split(',');
+  const mime = header.match(/:(.*?);/)[1];
+  res.setHeader('Content-Type', mime);
+  res.send(Buffer.from(data, 'base64'));
 });
 
 // ─── Settings (SMTP) ───────────────────────────────────────────────────────
@@ -967,7 +986,19 @@ function findLogo() {
   return null;
 }
 
+async function getLogoBuffer() {
+  const b64 = await getSetting('logo_b64');
+  if (b64) {
+    const [, data] = b64.split(',');
+    return Buffer.from(data, 'base64');
+  }
+  const fp = findLogo();
+  if (fp) return fs.readFileSync(fp);
+  return null;
+}
+
 async function generatePDF(report) {
+  const logoBuf = await getLogoBuffer();
   return new Promise((resolve, reject) => {
     try {
       const PDFDocument = getPDFDocument();
@@ -986,9 +1017,10 @@ async function generatePDF(report) {
       doc.rect(0, 0, W, 88).fill(BLUE);
 
       // Logo
-      const logoPath = findLogo();
-      if (logoPath) {
-        try { doc.image(logoPath, 50, 10, { fit: [180, 68], align: 'left', valign: 'center' }); } catch(_){}
+      if (logoBuf) {
+        try { doc.image(logoBuf, 50, 10, { fit: [180, 68], align: 'left', valign: 'center' }); } catch(_){
+          doc.fillColor('#ffffff').fontSize(22).font('Helvetica-Bold').text('GENX TAKEOVER', 50, 28);
+        }
       } else {
         doc.fillColor('#ffffff').fontSize(22).font('Helvetica-Bold').text('GENX TAKEOVER', 50, 28);
       }
