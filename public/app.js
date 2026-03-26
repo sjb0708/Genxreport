@@ -351,7 +351,7 @@ function renderReportDetail() {
 
   document.getElementById('detailPdfBtn').href = `/api/reports/${r.id}/pdf`;
   document.getElementById('detailEditBtn').style.display  = isDraft || isAdmin ? 'inline-flex' : 'none';
-  document.getElementById('detailSubmitBtn').style.display= isDraft && !isAdmin ? 'inline-flex' : 'none';
+  document.getElementById('detailSubmitBtn').style.display= isDraft ? 'inline-flex' : 'none';
   document.getElementById('detailDeleteBtn').style.display= isDraft || isAdmin ? 'inline-flex' : 'none';
   document.getElementById('addExpenseBtn').style.display  = isDraft ? 'inline-flex' : 'none';
 
