@@ -192,12 +192,12 @@
       <form id="loginForm">
         <div class="form-group">
           <label>Username</label>
-          <input type="text" id="username" autocomplete="username" placeholder="Enter your username" required autocapitalize="none" autocorrect="off" spellcheck="false">
+          <input type="text" id="username" autocomplete="username" placeholder="Enter your username" required autocapitalize="none" autocorrect="off" autocomplete="off" spellcheck="false" inputmode="text">
         </div>
         <div class="form-group">
           <label>Password</label>
           <div style="position:relative;">
-            <input type="password" id="password" autocomplete="current-password" placeholder="Enter your password" required style="padding-right:42px;width:100%;box-sizing:border-box;">
+            <input type="password" id="password" autocomplete="current-password" placeholder="Enter your password" required style="padding-right:42px;width:100%;box-sizing:border-box;" autocorrect="off" autocapitalize="none">
             <button type="button" onclick="const p=document.getElementById('password');p.type=p.type==='password'?'text':'password';this.textContent=p.type==='password'?'👁':'🙈'" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:16px;padding:0;">👁</button>
           </div>
         </div>
@@ -249,7 +249,7 @@
           })
         });
         const data = await res.json();
-        if (!res.ok) throw new Error(data.error || 'Login failed');
+        if (!res.ok) throw new Error((data.error || 'Login failed') + ' (user: ' + document.getElementById('username').value.trim() + ')');
         const role = data.user.role;
         window.location.href = (role === 'admin' || role === 'superadmin') ? '/admin' : '/app';
       } catch (ex) {
