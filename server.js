@@ -936,7 +936,7 @@ app.get('/api/export/qif', requireAdmin, async (req, res) => {
   reports.forEach(r => {
     r.expenses.forEach(e => {
       qif += `D${r.event_date||r.request_date}\n`;
-      qif += `T-${Math.abs(e.amount).toFixed(2)}\n`;
+      qif += `T-${Math.abs(parseFloat(e.amount)||0).toFixed(2)}\n`;
       qif += `P${e.vendor}\n`;
       qif += `M${e.purpose} – ${r.event_location}\n`;
       qif += `^\n`;
@@ -953,11 +953,11 @@ app.get('/api/export/iif', requireAdmin, async (req, res) => {
   iif +=     '!SPL\tTRNSTYPE\tDATE\tACCNT\tNAME\tAMOUNT\tMEMO\n';
   iif +=     '!ENDTRNS\n';
   reports.forEach(r => {
-    const total = r.expenses.reduce((s, e) => s + e.amount, 0);
+    const total = r.expenses.reduce((s, e) => s + (parseFloat(e.amount)||0), 0);
     const date  = r.event_date || r.request_date;
     iif += `TRNS\tEXPENSE\t${date}\tAccounts Payable\t${r.submit_payment_to||r.username}\t-${total.toFixed(2)}\t${r.event_location}\n`;
     r.expenses.forEach(e => {
-      iif += `SPL\tEXPENSE\t${date}\tTravel:${e.purpose}\t${e.vendor}\t${e.amount.toFixed(2)}\t${e.comments||e.purpose}\n`;
+      iif += `SPL\tEXPENSE\t${date}\tTravel:${e.purpose}\t${e.vendor}\t${(parseFloat(e.amount)||0).toFixed(2)}\t${e.comments||e.purpose}\n`;
     });
     iif += 'ENDTRNS\n';
   });
@@ -1052,7 +1052,7 @@ async function generatePDF(report) {
         const rowH = 22;
         if (y + rowH > doc.page.height - 100) { doc.addPage(); y = 60; }
         doc.rect(50, y, COL, rowH).fill(idx % 2 === 0 ? '#ffffff' : '#f8fafc');
-        const cells = [exp.vendor||'', exp.purpose||'', `$${(exp.amount||0).toFixed(2)}`, exp.comments||''];
+        const cells = [exp.vendor||'', exp.purpose||'', `$${(parseFloat(exp.amount)||0).toFixed(2)}`, exp.comments||''];
         cells.forEach((val, i) => {
           doc.fillColor('#111827').fontSize(9).font('Helvetica')
              .text(val, colX[i] + 6, y + 6, { width: colW[i] - 8, height: rowH - 4, ellipsis: true });
@@ -1062,7 +1062,7 @@ async function generatePDF(report) {
       });
 
       // ── Total row
-      const total = expenses.reduce((s, e) => s + (e.amount||0), 0);
+      const total = expenses.reduce((s, e) => s + (parseFloat(e.amount)||0), 0);
       doc.rect(50, y, COL, 28).fill(BLUE);
       doc.fillColor('#ffffff').fontSize(10).font('Helvetica-Bold')
          .text('TOTAL REIMBURSEMENT REQUEST', 56, y + 8, { width: COL * 0.6 });
@@ -1154,7 +1154,7 @@ async function sendSubmissionEmail(reportId, submitter) {
   if (!smtp) return; // Skip if not configured
   const report = await getFullReport(reportId);
   if (!report) return;
-  const total = (report.expenses||[]).reduce((s,e) => s + (e.amount||0), 0);
+  const total = (report.expenses||[]).reduce((s,e) => s + (parseFloat(e.amount)||0), 0);
   try {
     const pdf = await generatePDF(report);
     const fname = `expense-${(report.event_location||'report').replace(/[^a-z0-9]/gi,'-')}-${report.event_date||'report'}.pdf`;
