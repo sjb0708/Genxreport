@@ -90,7 +90,7 @@ button, input, select, textarea { font-family: inherit; }
   justify-content: center;
   min-height: 76px;
 }
-.sidebar-logo { max-height: 52px; max-width: 200px; object-fit: contain; }
+.sidebar-logo { max-height: 72px; max-width: 220px; object-fit: contain; }
 .sidebar-brand {
   font-size: 12px; font-weight: 800; color: #fff;
   letter-spacing: 2px; text-transform: uppercase; line-height: 1.4;

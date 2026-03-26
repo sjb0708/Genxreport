@@ -155,8 +155,8 @@
       </div>
       <div style="display:flex;align-items:center;gap:10px;">
         <div style="position:relative;">
-          <button id="notifBell" onclick="toggleNotifPanel()" style="background:none;border:none;cursor:pointer;font-size:20px;padding:4px 8px;border-radius:8px;transition:background 0.15s;" title="Notifications">🔔</button>
-          <span id="notifBadge" style="display:none;position:absolute;top:0;right:0;background:#dc2626;color:#fff;border-radius:50%;width:18px;height:18px;font-size:10px;font-weight:800;align-items:center;justify-content:center;"></span>
+          <button id="notifBell" onclick="toggleNotifPanel()" style="background:none;border:1.5px solid #e5e7eb;cursor:pointer;padding:7px;border-radius:10px;transition:all 0.15s;display:flex;align-items:center;justify-content:center;color:#374151;" title="Notifications" onmouseover="this.style.background='#f0f4f8';this.style.borderColor='#1a3f8c';this.style.color='#1a3f8c'" onmouseout="this.style.background='none';this.style.borderColor='#e5e7eb';this.style.color='#374151'"><i data-lucide="bell" style="width:18px;height:18px;"></i></button>
+          <span id="notifBadge" style="display:none;position:absolute;top:-3px;right:-3px;background:#dc2626;color:#fff;border-radius:50%;width:18px;height:18px;font-size:10px;font-weight:800;align-items:center;justify-content:center;border:2px solid #fff;"></span>
         </div>
         <div id="topbarActions"></div>
       </div>
@@ -235,7 +235,7 @@
 
         <div class="card" style="margin-bottom:20px;">
           <div class="card-header">
-            <div><div class="card-title">🔔 Needs Attention</div><div class="card-subtitle">Submitted &amp; under review — waiting for your decision</div></div>
+            <div><div class="card-title">Needs Attention</div><div class="card-subtitle">Submitted &amp; under review — waiting for your decision</div></div>
             <button class="btn btn-ghost btn-sm" onclick="filterReports('submitted');showPanel('reports')">View All →</button>
           </div>
           <div class="table-wrapper">
@@ -565,7 +565,7 @@
               </div>
             </div>
             <div class="card">
-              <div class="card-header"><div class="card-title">🔔 Email Notifications</div></div>
+              <div class="card-header"><div class="card-title">Email Notifications</div></div>
               <div class="card-body">
                 <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;">
                   <div>
@@ -620,7 +620,7 @@
         </div>
 
         <div class="card" style="margin-top:20px;">
-          <div class="card-header"><div class="card-title">🔔 Alert Thresholds</div><div class="card-subtitle">Control when issues are flagged in the Analytics panel</div></div>
+          <div class="card-header"><div class="card-title">Alert Thresholds</div><div class="card-subtitle">Control when issues are flagged in the Analytics panel</div></div>
           <div class="card-body">
             <div style="background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:14px 16px;margin-bottom:20px;font-size:13px;color:#92400e;line-height:1.6;">
               <strong>How this works:</strong> These percentages control the sensitivity of your 🟡 yellow warning flags in Analytics. Lower numbers = earlier warnings. Higher numbers = only flag when it's a real problem.
