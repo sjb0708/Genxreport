@@ -107,6 +107,7 @@ async function initDB() {
   await sql`ALTER TABLE reports ADD COLUMN IF NOT EXISTS paid_at TEXT`;
   await sql`ALTER TABLE reports ADD COLUMN IF NOT EXISTS paid_notes TEXT`;
   await sql`ALTER TABLE reports ADD COLUMN IF NOT EXISTS paid_by TEXT`;
+  await sql`ALTER TABLE reports ADD COLUMN IF NOT EXISTS last_reminder_at TEXT`;
 
   await sql`
     CREATE TABLE IF NOT EXISTS tour_stops (
@@ -275,10 +276,12 @@ app.post('/api/admin/users', requireAdmin, async (req, res) => {
   }
 });
 
-app.put('/api/admin/users/:id/role', requireSuperadmin, async (req, res) => {
+app.put('/api/admin/users/:id/role', requireAdmin, async (req, res) => {
   const { role } = req.body;
   if (!['user','admin','superadmin'].includes(role)) return res.status(400).json({ error: 'Invalid role' });
   if (req.params.id === req.user.id) return res.status(400).json({ error: 'Cannot change your own role' });
+  // Admins can assign user or admin; only superadmin can assign superadmin
+  if (role === 'superadmin' && req.user.role !== 'superadmin') return res.status(403).json({ error: 'Only superadmin can assign superadmin role' });
   await sql`UPDATE users SET role=${role} WHERE id=${req.params.id}`;
   res.json({ success: true });
 });
@@ -325,6 +328,85 @@ app.put('/api/tour-stops/:id', requireAdmin, async (req, res) => {
 app.delete('/api/tour-stops/:id', requireAdmin, async (req, res) => {
   await sql`DELETE FROM tour_stops WHERE id=${req.params.id}`;
   res.json({ success: true });
+});
+
+// ─── Stale Drafts ──────────────────────────────────────────────────────────
+
+// Drafts not updated in 5+ days
+app.get('/api/admin/stale-drafts', requireAdmin, async (req, res) => {
+  const cutoff = new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString();
+  const rows = await sql`
+    SELECT r.*, u.username, u.email,
+           COALESCE(SUM(e.amount),0) as total,
+           COUNT(e.id) as expense_count
+    FROM reports r
+    LEFT JOIN users u ON u.id = r.user_id
+    LEFT JOIN expenses e ON e.report_id = r.id
+    WHERE r.status = 'draft' AND r.created_at < ${cutoff}
+    GROUP BY r.id, u.username, u.email
+    ORDER BY r.created_at ASC`;
+  res.json(rows);
+});
+
+// Send reminder email to user about their stale draft
+app.post('/api/admin/remind-draft/:id', requireAdmin, async (req, res) => {
+  const report = (await sql`SELECT r.*, u.username, u.email FROM reports r LEFT JOIN users u ON u.id=r.user_id WHERE r.id=${req.params.id}`)[0];
+  if (!report) return res.status(404).json({ error: 'Not found' });
+  if (report.status !== 'draft') return res.status(400).json({ error: 'Not a draft' });
+  try {
+    const smtp = await getSetting('smtp_user');
+    if (smtp && report.email) {
+      const t = await getTransport();
+      await t.sendMail({
+        from: await getSetting('smtp_from') || smtp,
+        to:   report.email,
+        subject: `Reminder: Complete your expense report — ${report.event_location || 'Untitled'}`,
+        html: `<h2>Expense Report Reminder</h2>
+               <p>Hi ${report.username},</p>
+               <p>You have an unfinished expense report${report.event_location ? ` for <strong>${report.event_location}</strong>` : ''} that has been sitting as a draft for over 5 days.</p>
+               <p>Please log in to complete and submit it, or delete it if it's no longer needed.</p>
+               <p><a href="${process.env.APP_URL || 'https://gex-expense-report-nq2l7w78a-steves-projects-2434f651.vercel.app'}/app">Open Expense Portal →</a></p>`
+      });
+    }
+    await sql`UPDATE reports SET last_reminder_at=${new Date().toISOString()} WHERE id=${req.params.id}`;
+    res.json({ success: true });
+  } catch(e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// Vercel cron: auto-remind all stale drafts that haven't been reminded in 5 days
+app.post('/api/cron/draft-reminders', async (req, res) => {
+  if (req.headers['authorization'] !== `Bearer ${process.env.CRON_SECRET}`) return res.status(401).end();
+  const cutoff        = new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString();
+  const reminderCutoff= new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString();
+  const drafts = await sql`
+    SELECT r.*, u.username, u.email FROM reports r
+    LEFT JOIN users u ON u.id = r.user_id
+    WHERE r.status='draft' AND r.created_at < ${cutoff}
+      AND (r.last_reminder_at IS NULL OR r.last_reminder_at < ${reminderCutoff})`;
+  let sent = 0;
+  const smtp = await getSetting('smtp_user');
+  if (smtp) {
+    for (const report of drafts) {
+      if (!report.email) continue;
+      try {
+        const t = await getTransport();
+        await t.sendMail({
+          from: await getSetting('smtp_from') || smtp,
+          to:   report.email,
+          subject: `Reminder: Complete your expense report — ${report.event_location || 'Untitled'}`,
+          html: `<h2>Expense Report Reminder</h2>
+                 <p>Hi ${report.username},</p>
+                 <p>You have an unfinished expense report${report.event_location ? ` for <strong>${report.event_location}</strong>` : ''} that has been sitting as a draft. Please log in to complete and submit it.</p>
+                 <p><a href="${process.env.APP_URL || 'https://gex-expense-report-nq2l7w78a-steves-projects-2434f651.vercel.app'}/app">Open Expense Portal →</a></p>`
+        });
+        await sql`UPDATE reports SET last_reminder_at=${new Date().toISOString()} WHERE id=${report.id}`;
+        sent++;
+      } catch(_) {}
+    }
+  }
+  res.json({ sent, total: drafts.length });
 });
 
 // ─── Admin – All Reports ───────────────────────────────────────────────────

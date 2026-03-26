@@ -169,6 +169,23 @@
           <div class="stat-card blue" onclick="filterReports('paid')" style="cursor:pointer"><div class="stat-icon">💰</div><div class="stat-value" id="statTotal">—</div><div class="stat-label">Total Paid $</div></div>
         </div>
 
+        <!-- Stale Drafts Alert Card -->
+        <div class="card" id="staleDraftsCard" style="display:none;margin-bottom:20px;border:1.5px solid #fde68a;">
+          <div class="card-header" style="background:#fffbeb;">
+            <div>
+              <div class="card-title" style="color:#92400e;">⚠️ Stale Drafts — <span id="staleDraftsCount">0</span> report(s) sitting for 5+ days</div>
+              <div class="card-subtitle">Send a reminder to the user or delete the draft to clean up.</div>
+            </div>
+            <button class="btn btn-ghost btn-sm" onclick="document.getElementById('filterStatus').value='draft';showPanel('reports')">View All Drafts →</button>
+          </div>
+          <div class="table-wrapper">
+            <table>
+              <thead><tr><th>User</th><th>Report</th><th>Created</th><th>Last Reminded</th><th>Actions</th></tr></thead>
+              <tbody id="staleDraftsBody"></tbody>
+            </table>
+          </div>
+        </div>
+
         <div class="card">
           <div class="card-header">
             <div><div class="card-title">Recent Submissions</div><div class="card-subtitle">Latest expense reports across all users</div></div>

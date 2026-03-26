@@ -59,9 +59,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   }).catch(()=>{});
 
-  // Hide admin role option if not superadmin
+  // Only superadmin can assign superadmin role — hide that option for regular admins
   if (currentAdminUser.role !== 'superadmin') {
-    document.querySelectorAll('#newUserRole option[value="admin"]').forEach(o => o.remove());
+    document.querySelectorAll('#newUserRole option[value="superadmin"]').forEach(o => o.remove());
   }
 
   loadDashboard();
@@ -138,7 +138,12 @@ function showPanel(name) {
   else if (name === 'tourstops') actions.innerHTML = `<button class="btn btn-primary btn-sm" onclick="openAddTourStop()">+ Add Stop</button>`;
   else actions.innerHTML = '';
 
-  if (name === 'reports')   loadAllReports();
+  if (name === 'reports') {
+    // Default: hide drafts so admin sees actionable reports only
+    const sf = document.getElementById('filterStatus');
+    if (sf && sf.value === '') sf.value = 'submitted';
+    loadAllReports();
+  }
   if (name === 'users')     loadUsers();
   if (name === 'settings')  loadSmtpSettings();
   if (name === 'export')    loadUserFilter('exportUser');
@@ -148,12 +153,15 @@ function showPanel(name) {
 // ─── Dashboard ─────────────────────────────────────────────
 
 async function loadDashboard() {
-  const [usersRes, reportsRes] = await Promise.all([
+  const [usersRes, reportsRes, staleRes] = await Promise.all([
     fetch('/api/admin/users'),
-    fetch('/api/admin/reports')
+    fetch('/api/admin/reports'),
+    fetch('/api/admin/stale-drafts')
   ]);
   const users   = await usersRes.json();
   const reports = await reportsRes.json();
+  const stale   = staleRes.ok ? await staleRes.json() : [];
+  renderStaleDrafts(stale);
 
   // Update pending badge
   const pending = reports.filter(r => r.status === 'submitted').length;
@@ -191,6 +199,42 @@ async function loadDashboard() {
       </td>
     </tr>
   `).join('') || `<tr><td colspan="7" class="table-empty"><div class="table-empty-icon">📋</div><p>No reports yet</p></td></tr>`;
+}
+
+function renderStaleDrafts(drafts) {
+  const el = document.getElementById('staleDraftsCard');
+  if (!el) return;
+  if (!drafts.length) { el.style.display = 'none'; return; }
+  el.style.display = 'block';
+  document.getElementById('staleDraftsCount').textContent = drafts.length;
+  document.getElementById('staleDraftsBody').innerHTML = drafts.map(r => `
+    <tr>
+      <td><strong>${esc(r.username||'—')}</strong></td>
+      <td>${esc(r.event_location||'Untitled')}</td>
+      <td>${r.created_at ? r.created_at.slice(0,10) : '—'}</td>
+      <td>${r.last_reminder_at ? r.last_reminder_at.slice(0,10) : '<span style="color:#9ca3af">Never</span>'}</td>
+      <td onclick="event.stopPropagation()" style="display:flex;gap:6px;flex-wrap:wrap;padding:6px 10px;">
+        <button class="action-btn" style="background:#fef3c7;color:#92400e;" onclick="remindDraft('${r.id}',this)">📧 Remind</button>
+        <button class="action-btn action-btn-red" onclick="deleteStaleDraft('${r.id}','${esc(r.event_location||r.username)}',this)">🗑 Delete</button>
+      </td>
+    </tr>`).join('');
+}
+
+async function remindDraft(id, btn) {
+  btn.disabled = true;
+  const res = await fetch(`/api/admin/remind-draft/${id}`, { method:'POST' });
+  if (!res.ok) { toast('Reminder failed.', 'error'); btn.disabled=false; return; }
+  toast('Reminder sent to user.', 'success');
+  loadDashboard();
+}
+
+async function deleteStaleDraft(id, label, btn) {
+  if (!confirm(`Delete draft "${label}"? This cannot be undone.`)) return;
+  btn.disabled = true;
+  const res = await fetch(`/api/reports/${id}`, { method:'DELETE' });
+  if (!res.ok) { toast('Delete failed.', 'error'); btn.disabled=false; return; }
+  toast('Draft deleted.', 'warning');
+  loadDashboard();
 }
 
 function animateCounter(el, target) {
@@ -262,6 +306,9 @@ async function loadAllReports() {
         ${r.status === 'rejected' ? `
           <button class="action-btn action-btn-gray"  onclick="reopenReport('${r.id}',this)">↩ Reopen</button>` : ''}
         ${r.status === 'paid' ? `<span style="font-size:11px;color:#065f46;">✓ Paid ${r.paid_at?r.paid_at.slice(0,10):''}</span>` : ''}
+        ${r.status === 'draft' ? `
+          <button class="action-btn" style="background:#fef3c7;color:#92400e;" onclick="event.stopPropagation();remindDraft('${r.id}',this)">📧 Remind</button>
+          <button class="action-btn action-btn-red" onclick="event.stopPropagation();deleteStaleDraft('${r.id}','${esc(r.event_location||r.username)}',this)">🗑 Delete</button>` : ''}
       </td>
     </tr>
   `).join('') || `<tr><td colspan="7" class="table-empty"><div class="table-empty-icon">🔍</div><p>No reports match filters</p></td></tr>`;
