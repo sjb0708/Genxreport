@@ -650,14 +650,26 @@ async function loadAnalytics() {
         </tr>`
     : `<tr><td colspan="4" class="table-empty"><div class="table-empty-icon">📊</div><p>No data for selected filters</p></td></tr>`;
 
-  // User table
+  // User table — flag high spenders when a category is selected
+  const userAvg = byUser.length > 1 ? byUser.reduce((s,r) => s + r.total, 0) / byUser.length : 0;
+  const userTitle = document.getElementById('anUserTitle');
+  if (userTitle) userTitle.textContent = category ? `${category} — by User` : 'Spend by User';
+
   document.getElementById('anUserBody').innerHTML = byUser.length
-    ? byUser.map(r => `<tr>
-        <td><strong>${esc(r.username)}</strong></td>
-        <td style="text-align:right;color:#6b7280;">${r.report_count}</td>
-        <td style="text-align:right;color:#6b7280;">${r.expense_count}</td>
-        <td style="text-align:right;font-weight:700;">${fmt(r.total)}</td>
-      </tr>`).join('')
+    ? byUser.map((r, i) => {
+        const isHigh = category && byUser.length > 1 && r.total > userAvg * 1.5;
+        const flag   = isHigh ? ' <span title="Significantly above average" style="color:#dc2626;font-size:13px;">⚠️</span>' : '';
+        const rowStyle = isHigh ? 'background:#fff7f7;' : i === 0 && category ? 'background:#f0f7ff;' : '';
+        const bar = byUser[0].total > 0
+          ? `<div style="display:inline-block;width:${Math.round((r.total/byUser[0].total)*80)}px;height:6px;background:${isHigh?'#dc2626':'#1a3f8c'};border-radius:3px;margin-right:8px;vertical-align:middle;"></div>`
+          : '';
+        return `<tr style="${rowStyle}">
+          <td><strong>${esc(r.username)}</strong>${flag}</td>
+          <td style="text-align:right;color:#6b7280;">${r.report_count}</td>
+          <td style="text-align:right;color:#6b7280;">${r.expense_count}</td>
+          <td style="text-align:right;font-weight:700;white-space:nowrap;">${bar}${fmt(r.total)}</td>
+        </tr>`;
+      }).join('')
     : `<tr><td colspan="4" class="table-empty"><div class="table-empty-icon">👥</div><p>No data</p></td></tr>`;
 
   // Detail table
