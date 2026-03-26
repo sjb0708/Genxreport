@@ -179,26 +179,44 @@ async function loadDashboard() {
   animateCounter(document.getElementById('statApproved'),reports.filter(r=>r.status==='approved').length);
   document.getElementById('statTotal').textContent = '$' + approvedTotal.toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g,',');
 
-  // Recent reports table
-  const recent = [...reports].sort((a,b)=>(b.submitted_at||b.created_at||'').localeCompare(a.submitted_at||a.created_at||'')).slice(0,10);
-  document.getElementById('recentBody').innerHTML = recent.map(r => `
-    <tr style="cursor:pointer;" onclick="openReportDetail('${r.id}','${esc(r.user_id||'')}')" title="Click to view full report">
+  // Needs Attention — submitted + under_review only
+  const needsAttention = reports
+    .filter(r => r.status === 'submitted' || r.status === 'under_review')
+    .sort((a,b) => (a.submitted_at||a.created_at||'').localeCompare(b.submitted_at||b.created_at||''));
+  document.getElementById('recentBody').innerHTML = needsAttention.map(r => `
+    <tr style="cursor:pointer;" onclick="openReportDetail('${r.id}')" title="Click to view full report">
       <td><strong>${esc(r.username||'—')}</strong></td>
       <td>${esc(r.event_location||'—')}</td>
       <td>${r.event_date||'—'}</td>
-      <td>${r.submitted_at ? r.submitted_at.slice(0,10) : '<span style="color:#9ca3af">Not submitted</span>'}</td>
+      <td>${r.submitted_at ? r.submitted_at.slice(0,10) : '—'}</td>
       <td><strong>$${parseFloat(r.total||0).toFixed(2)}</strong></td>
       <td><span class="badge badge-${r.status}">${statusLabel(r.status)}</span></td>
       <td onclick="event.stopPropagation()" style="display:flex;gap:6px;flex-wrap:wrap;">
         <a href="/api/reports/${r.id}/pdf" target="_blank" class="action-btn action-btn-blue">📄 PDF</a>
-        ${(r.status === 'submitted' || r.status === 'under_review') ? `
-          <button class="action-btn action-btn-green" onclick="quickApprove('${r.id}',this)">✓ Approve</button>
-          <button class="action-btn action-btn-red"   onclick="openRejectModal('${r.id}')">✕ Reject</button>` : ''}
-        ${r.status === 'approved' ? `
-          <button class="action-btn" style="background:#d1fae5;color:#065f46;" onclick="openPaidModal('${r.id}')">💳 Paid</button>` : ''}
+        <button class="action-btn action-btn-green" onclick="quickApprove('${r.id}',this)">✓ Approve</button>
+        <button class="action-btn action-btn-red"   onclick="openRejectModal('${r.id}')">✕ Reject</button>
       </td>
     </tr>
-  `).join('') || `<tr><td colspan="7" class="table-empty"><div class="table-empty-icon">📋</div><p>No reports yet</p></td></tr>`;
+  `).join('') || `<tr><td colspan="7" class="table-empty"><div class="table-empty-icon">🎉</div><p>All caught up — nothing pending</p></td></tr>`;
+
+  // Recently Closed — last 5 approved or paid
+  const recentClosed = reports
+    .filter(r => r.status === 'approved' || r.status === 'paid')
+    .sort((a,b) => (b.reviewed_at||b.created_at||'').localeCompare(a.reviewed_at||a.created_at||''))
+    .slice(0, 5);
+  document.getElementById('recentClosedBody').innerHTML = recentClosed.map(r => `
+    <tr style="cursor:pointer;" onclick="openReportDetail('${r.id}')" title="Click to view full report">
+      <td><strong>${esc(r.username||'—')}</strong></td>
+      <td>${esc(r.event_location||'—')}</td>
+      <td>${r.event_date||'—'}</td>
+      <td><strong>$${parseFloat(r.total||0).toFixed(2)}</strong></td>
+      <td><span class="badge badge-${r.status}">${statusLabel(r.status)}</span></td>
+      <td onclick="event.stopPropagation()" style="display:flex;gap:6px;flex-wrap:wrap;">
+        <a href="/api/reports/${r.id}/pdf" target="_blank" class="action-btn action-btn-blue">📄 PDF</a>
+        ${r.status === 'approved' ? `<button class="action-btn" style="background:#d1fae5;color:#065f46;" onclick="openPaidModal('${r.id}')">💳 Paid</button>` : ''}
+      </td>
+    </tr>
+  `).join('') || `<tr><td colspan="6" class="table-empty"><div class="table-empty-icon">📋</div><p>No closed reports yet</p></td></tr>`;
 }
 
 function renderStaleDrafts(drafts) {

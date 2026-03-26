@@ -187,15 +187,28 @@
           </div>
         </div>
 
-        <div class="card">
+        <div class="card" style="margin-bottom:20px;">
           <div class="card-header">
-            <div><div class="card-title">Recent Submissions</div><div class="card-subtitle">Latest expense reports across all users</div></div>
-            <button class="btn btn-ghost btn-sm" onclick="showPanel('reports')">View All →</button>
+            <div><div class="card-title">🔔 Needs Attention</div><div class="card-subtitle">Submitted &amp; under review — waiting for your decision</div></div>
+            <button class="btn btn-ghost btn-sm" onclick="filterReports('submitted');showPanel('reports')">View All →</button>
           </div>
           <div class="table-wrapper">
             <table>
               <thead><tr><th>User</th><th>Event</th><th>Date</th><th>Submitted</th><th>Total</th><th>Status</th><th>Actions</th></tr></thead>
               <tbody id="recentBody"><tr><td colspan="7"><div class="spinner"></div></td></tr></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <div><div class="card-title">✅ Recently Closed</div><div class="card-subtitle">Last 5 approved or paid reports</div></div>
+            <button class="btn btn-ghost btn-sm" onclick="filterReports('paid');showPanel('reports')">View All →</button>
+          </div>
+          <div class="table-wrapper">
+            <table>
+              <thead><tr><th>User</th><th>Event</th><th>Date</th><th>Total</th><th>Status</th><th>Actions</th></tr></thead>
+              <tbody id="recentClosedBody"><tr><td colspan="6"><div class="spinner"></div></td></tr></tbody>
             </table>
           </div>
         </div>
