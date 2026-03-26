@@ -409,7 +409,7 @@ function renderExpenses() {
   const r      = currentReport;
   const isDraft= r.status === 'draft';
   const el     = document.getElementById('expensesList');
-  const total  = (r.expenses||[]).reduce((s, e) => s + (e.amount||0), 0);
+  const total  = (r.expenses||[]).reduce((s, e) => s + parseFloat(e.amount||0), 0);
 
   document.getElementById('detailExpCount').textContent = `${(r.expenses||[]).length} item${(r.expenses||[]).length===1?'':'s'}`;
   document.getElementById('detailTotal').textContent = '$' + total.toFixed(2);
@@ -559,7 +559,7 @@ async function deleteReport() {
 
 function openSubmitModal() {
   const r     = currentReport;
-  const total = (r.expenses||[]).reduce((s,e)=>s+(e.amount||0),0);
+  const total = (r.expenses||[]).reduce((s,e)=>s+parseFloat(e.amount||0),0);
   document.getElementById('submitSummary').innerHTML = `
     <div style="background:#f8fafc;border:1px solid #e5e7eb;border-radius:10px;padding:16px;">
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;font-size:13px;">
