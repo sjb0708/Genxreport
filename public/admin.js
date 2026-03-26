@@ -787,23 +787,28 @@ async function saveNewTourStop() {
   await loadTourStops();
 }
 
-// Inline edit via prompt (simple approach)
-async function openEditTourStop(stopId) {
-  const stop  = tourStopsData.find(s => s.id === stopId);
+function openEditTourStop(stopId) {
+  const stop = tourStopsData.find(s => s.id === stopId);
   if (!stop) return;
+  document.getElementById('editStopId').value    = stopId;
+  document.getElementById('editStopVenue').value = stop.venue || '';
+  document.getElementById('editStopDate').value  = stop.event_date || '';
+  document.getElementById('editStopNotes').value = stop.notes || '';
+  openModal('editTourStopModal');
+}
 
-  const venue = prompt('Edit venue/city:', stop.venue);
-  if (venue === null) return;
-  const date  = prompt('Edit date (YYYY-MM-DD):', stop.event_date);
-  if (date === null) return;
-  const notes = prompt('Notes (optional):', stop.notes || '');
-  if (notes === null) return;
-
+async function saveEditTourStop() {
+  const stopId = document.getElementById('editStopId').value;
+  const venue  = document.getElementById('editStopVenue').value.trim();
+  const date   = document.getElementById('editStopDate').value.trim();
+  const notes  = document.getElementById('editStopNotes').value.trim();
+  if (!venue || !date) { toast('Venue and date are required.', 'error'); return; }
   const res = await fetch(`/api/tour-stops/${stopId}`, {
     method:'PUT', headers:{'Content-Type':'application/json'},
-    body: JSON.stringify({ venue: venue.trim(), event_date: date.trim(), notes: notes.trim() })
+    body: JSON.stringify({ venue, event_date: date, notes })
   });
   if (!res.ok) { toast('Update failed.', 'error'); return; }
+  closeModal('editTourStopModal');
   toast('Tour stop updated.', 'success');
   await loadTourStops();
 }

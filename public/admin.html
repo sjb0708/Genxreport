@@ -381,6 +381,37 @@
   </div>
 </div>
 
+<!-- Edit Tour Stop Modal -->
+<div class="modal-overlay" id="editTourStopModal">
+  <div class="modal" style="max-width:460px;">
+    <div class="modal-header">
+      <div class="modal-title">Edit Tour Stop</div>
+      <button class="modal-close" onclick="closeModal('editTourStopModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="editStopId">
+      <div class="form-row">
+        <div class="form-group">
+          <label>City / Venue <span class="required">*</span></label>
+          <input type="text" id="editStopVenue" class="form-control" placeholder="e.g. Nashville, TN">
+        </div>
+        <div class="form-group">
+          <label>Event Date <span class="required">*</span></label>
+          <input type="date" id="editStopDate" class="form-control">
+        </div>
+      </div>
+      <div class="form-group mb-0">
+        <label>Notes (optional)</label>
+        <input type="text" id="editStopNotes" class="form-control" placeholder="Additional details…">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('editTourStopModal')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveEditTourStop()">Save Changes</button>
+    </div>
+  </div>
+</div>
+
 <script src="/admin.js"></script>
 </body>
 </html>
