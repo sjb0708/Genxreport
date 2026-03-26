@@ -555,10 +555,16 @@ tbody td strong { color: var(--text); font-weight: 600; }
 
 @media (max-width: 768px) {
   :root { --sidebar-w: 0px; }
-  .sidebar { transform: translateX(-100%); transition: transform var(--transition-slow); }
-  .sidebar.open { transform: translateX(0); width: 256px; }
+  .sidebar {
+    position: fixed; top: 0; left: 0; height: 100vh; z-index: 100;
+    transform: translateX(-100%); transition: transform 0.25s ease;
+  }
+  .sidebar.open { transform: translateX(0); width: 256px; box-shadow: 4px 0 24px rgba(0,0,0,0.3); }
   .main-content { margin-left: 0; }
+  #hamburgerBtn { display: inline-block !important; }
   .form-row, .form-row-3 { grid-template-columns: 1fr; }
   .stats-grid { grid-template-columns: 1fr 1fr; }
   .page-body { padding: 16px; }
+  .table-wrapper { overflow-x: auto; }
+  .modal { width: 95vw !important; max-width: 95vw !important; }
 }

@@ -98,6 +98,18 @@ async function loadNotifications() {
     </div>`).join('');
 }
 
+function toggleSidebar() {
+  const sidebar = document.querySelector('.sidebar');
+  const overlay = document.getElementById('sidebarOverlay');
+  const isOpen  = sidebar.classList.contains('open');
+  sidebar.classList.toggle('open', !isOpen);
+  overlay.style.display = isOpen ? 'none' : 'block';
+}
+function closeSidebar() {
+  document.querySelector('.sidebar').classList.remove('open');
+  document.getElementById('sidebarOverlay').style.display = 'none';
+}
+
 function toggleNotifPanel() {
   notifOpen = !notifOpen;
   document.getElementById('notifPanel').style.display = notifOpen ? 'block' : 'none';
@@ -131,6 +143,7 @@ function showPanel(name) {
   document.querySelector(`.nav-item[data-panel="${name}"]`)?.classList.add('active');
   const titles = { dashboard:'Dashboard', reports:'All Reports', export:'Export Data', users:'Users', settings:'Settings', tourstops:'Tour Stop Schedule' };
   document.getElementById('panelTitle').textContent = titles[name] || name;
+  closeSidebar();
 
   // Action buttons
   const actions = document.getElementById('topbarActions');
