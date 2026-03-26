@@ -621,7 +621,7 @@ async function loadAnalytics() {
 
   const res = await fetch('/api/admin/analytics?' + params.toString());
   if (!res.ok) { toast('Analytics failed to load.', 'error'); return; }
-  const { byCategory, byUser, summary, detail, locations } = await res.json();
+  const { byCategory, byUser, byVenue, summary, detail, locations } = await res.json();
 
   // Refresh location dropdown while preserving selection
   const locSel = document.getElementById('analyticsLocation');
@@ -636,62 +636,89 @@ async function loadAnalytics() {
 
   // Summary cards
   document.getElementById('anStatTotal').textContent    = fmt(grandTotal);
-  document.getElementById('anStatReports').textContent  = summary.report_count;
-  document.getElementById('anStatExpenses').textContent = summary.expense_count;
-  const avg = summary.report_count > 0 ? grandTotal / summary.report_count : 0;
-  document.getElementById('anStatAvg').textContent      = fmt(avg);
+  document.getElementById('anStatVenues').textContent   = summary.venue_count || 0;
+  document.getElementById('anStatPeople').textContent   = summary.people_count || 0;
+  const avgVenue = summary.venue_count > 0 ? grandTotal / summary.venue_count : 0;
+  document.getElementById('anStatAvgVenue').textContent = fmt(avgVenue);
+
+  // Venue table
+  const venueTitle = document.getElementById('anVenueTitle');
+  if (venueTitle) venueTitle.textContent = location ? `${location} — Cost Summary` : 'Cost by Venue';
+  document.getElementById('anVenueBody').innerHTML = byVenue.length
+    ? byVenue.map((v, i) => {
+        const pct    = grandTotal > 0 ? ((v.total / grandTotal) * 100).toFixed(1) : '0.0';
+        const avgPer = v.people > 0 ? v.total / v.people : 0;
+        const isHigh = byVenue.length > 1 && v.total > (grandTotal / byVenue.length) * 1.5;
+        const bar    = `<div style="display:inline-block;width:${Math.max(4, Math.round((v.total/byVenue[0].total)*80))}px;height:6px;background:${isHigh?'#dc2626':'#1a3f8c'};border-radius:3px;margin-right:8px;vertical-align:middle;"></div>`;
+        return `<tr style="${isHigh ? 'background:#fff7f7;' : i===0 ? 'background:#f0f7ff;' : ''}"
+                    onclick="document.getElementById('analyticsLocation').value='${esc(v.venue)}';loadAnalytics();"
+                    style="cursor:pointer;${isHigh ? 'background:#fff7f7;' : i===0 ? 'background:#f0f7ff;' : ''}">
+          <td><strong>${esc(v.venue)}</strong>${isHigh ? ' <span style="color:#dc2626;" title="High spend venue">⚠️</span>' : ''}</td>
+          <td style="color:#6b7280;">${v.date||'—'}</td>
+          <td style="text-align:right;color:#6b7280;">${v.people}</td>
+          <td style="text-align:right;font-weight:700;white-space:nowrap;">${bar}${fmt(v.total)}</td>
+          <td style="text-align:right;color:#6b7280;">${fmt(avgPer)}</td>
+          <td style="text-align:right;color:#6b7280;">${pct}%</td>
+        </tr>`;
+      }).join('') + `<tr style="border-top:2px solid #e5e7eb;background:#f9fafb;font-weight:700;">
+        <td>TOTAL</td><td></td><td></td>
+        <td style="text-align:right;color:#1a3f8c;">${fmt(grandTotal)}</td>
+        <td></td><td style="text-align:right;">100%</td>
+      </tr>`
+    : `<tr><td colspan="6" class="table-empty"><div class="table-empty-icon">📍</div><p>No venue data — run a report</p></td></tr>`;
+
+  // User table
+  const userAvg = byUser.length > 1 ? grandTotal / byUser.length : 0;
+  const userTitle = document.getElementById('anUserTitle');
+  const ctxLabel = [location, category].filter(Boolean).join(' · ');
+  if (userTitle) userTitle.textContent = ctxLabel ? `Cost by Person — ${ctxLabel}` : 'Cost by Person';
+
+  document.getElementById('anUserBody').innerHTML = byUser.length
+    ? byUser.map((r, i) => {
+        const isHigh   = byUser.length > 1 && r.total > userAvg * 1.5;
+        const vsAvg    = userAvg > 0 ? ((r.total - userAvg) / userAvg * 100) : 0;
+        const vsLabel  = userAvg > 0 ? `${vsAvg >= 0 ? '+' : ''}${vsAvg.toFixed(0)}%` : '—';
+        const vsColor  = vsAvg > 50 ? '#dc2626' : vsAvg > 0 ? '#d97706' : '#16a34a';
+        const bar      = byUser[0].total > 0
+          ? `<div style="display:inline-block;width:${Math.max(4,Math.round((r.total/byUser[0].total)*80))}px;height:6px;background:${isHigh?'#dc2626':'#1a3f8c'};border-radius:3px;margin-right:8px;vertical-align:middle;"></div>`
+          : '';
+        return `<tr style="${isHigh ? 'background:#fff7f7;' : i===0 ? 'background:#f0f7ff;' : ''}">
+          <td><strong>${esc(r.username)}</strong>${isHigh ? ' <span style="color:#dc2626;" title="Above average spender">⚠️</span>' : ''}</td>
+          <td style="text-align:right;color:#6b7280;">${r.report_count}</td>
+          <td style="text-align:right;font-weight:700;white-space:nowrap;">${bar}${fmt(r.total)}</td>
+          <td style="text-align:right;font-weight:700;color:${userAvg>0?vsColor:'#6b7280'};font-size:12px;">${vsLabel}</td>
+        </tr>`;
+      }).join('') + `<tr style="border-top:2px solid #e5e7eb;background:#f9fafb;font-weight:700;">
+        <td>TOTAL</td><td></td><td style="text-align:right;color:#1a3f8c;">${fmt(grandTotal)}</td><td></td>
+      </tr>`
+    : `<tr><td colspan="4" class="table-empty"><div class="table-empty-icon">👥</div><p>No data</p></td></tr>`;
 
   // Category table
   document.getElementById('anCategoryBody').innerHTML = byCategory.length
     ? byCategory.map(r => {
         const pct = grandTotal > 0 ? ((r.total / grandTotal) * 100).toFixed(1) : '0.0';
-        const bar = `<div style="display:inline-block;width:${Math.round(pct)}%;max-width:60px;height:6px;background:#1a3f8c;border-radius:3px;margin-right:6px;vertical-align:middle;"></div>`;
+        const bar = `<div style="display:inline-block;width:${Math.max(4,Math.round(parseFloat(pct)))}%;max-width:80px;height:6px;background:#1a3f8c;border-radius:3px;margin-right:6px;vertical-align:middle;"></div>`;
         return `<tr>
           <td><strong>${esc(r.category||'Uncategorized')}</strong></td>
-          <td style="text-align:right;color:#6b7280;">${r.count}</td>
           <td style="text-align:right;font-weight:700;">${fmt(r.total)}</td>
           <td style="text-align:right;white-space:nowrap;">${bar}${pct}%</td>
         </tr>`;
-      }).join('') + `<tr style="border-top:2px solid #e5e7eb;background:#f9fafb;">
-          <td><strong>TOTAL</strong></td>
-          <td style="text-align:right;color:#6b7280;">${summary.expense_count}</td>
-          <td style="text-align:right;font-weight:700;color:#1a3f8c;">${fmt(grandTotal)}</td>
-          <td></td>
-        </tr>`
-    : `<tr><td colspan="4" class="table-empty"><div class="table-empty-icon">📊</div><p>No data for selected filters</p></td></tr>`;
-
-  // User table — flag high spenders when a category is selected
-  const userAvg = byUser.length > 1 ? byUser.reduce((s,r) => s + r.total, 0) / byUser.length : 0;
-  const userTitle = document.getElementById('anUserTitle');
-  if (userTitle) userTitle.textContent = category ? `${category} — by User` : 'Spend by User';
-
-  document.getElementById('anUserBody').innerHTML = byUser.length
-    ? byUser.map((r, i) => {
-        const isHigh = category && byUser.length > 1 && r.total > userAvg * 1.5;
-        const flag   = isHigh ? ' <span title="Significantly above average" style="color:#dc2626;font-size:13px;">⚠️</span>' : '';
-        const rowStyle = isHigh ? 'background:#fff7f7;' : i === 0 && category ? 'background:#f0f7ff;' : '';
-        const bar = byUser[0].total > 0
-          ? `<div style="display:inline-block;width:${Math.round((r.total/byUser[0].total)*80)}px;height:6px;background:${isHigh?'#dc2626':'#1a3f8c'};border-radius:3px;margin-right:8px;vertical-align:middle;"></div>`
-          : '';
-        return `<tr style="${rowStyle}">
-          <td><strong>${esc(r.username)}</strong>${flag}</td>
-          <td style="text-align:right;color:#6b7280;">${r.report_count}</td>
-          <td style="text-align:right;color:#6b7280;">${r.expense_count}</td>
-          <td style="text-align:right;font-weight:700;white-space:nowrap;">${bar}${fmt(r.total)}</td>
-        </tr>`;
-      }).join('')
-    : `<tr><td colspan="4" class="table-empty"><div class="table-empty-icon">👥</div><p>No data</p></td></tr>`;
+      }).join('') + `<tr style="border-top:2px solid #e5e7eb;background:#f9fafb;font-weight:700;">
+        <td>TOTAL</td>
+        <td style="text-align:right;color:#1a3f8c;">${fmt(grandTotal)}</td><td></td>
+      </tr>`
+    : `<tr><td colspan="3" class="table-empty"><div class="table-empty-icon">📊</div><p>No data</p></td></tr>`;
 
   // Detail table
   document.getElementById('anDetailSubtitle').textContent =
-    `${detail.length} line item${detail.length !== 1 ? 's' : ''}${detail.length === 200 ? ' (showing first 200)' : ''}`;
+    `${detail.length} line item${detail.length !== 1 ? 's' : ''}${detail.length === 200 ? ' (first 200 shown)' : ''}`;
   document.getElementById('anDetailBody').innerHTML = detail.length
     ? detail.map(e => `<tr>
-        <td>${esc(e.username)}</td>
+        <td><strong>${esc(e.username)}</strong></td>
         <td>${esc(e.event_location||'—')}</td>
         <td>${e.event_date||'—'}</td>
         <td>${esc(e.vendor||'—')}</td>
-        <td><span class="badge badge-${e.status}" style="font-size:10px;">${esc(e.purpose||'—')}</span></td>
+        <td style="font-size:11px;color:#6b7280;">${esc(e.purpose||'—')}</td>
         <td style="text-align:right;font-weight:700;">${fmt(e.amount)}</td>
       </tr>`).join('')
     : `<tr><td colspan="6" class="table-empty"><div class="table-empty-icon">🧾</div><p>No expenses match your filters</p></td></tr>`;

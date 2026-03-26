@@ -394,10 +394,31 @@ app.get('/api/admin/analytics', requireAdmin, async (req, res) => {
   Object.keys(userMap).forEach(u => { userMap[u].report_count = reportsByUser[u].size; });
   const byUser = Object.values(userMap).sort((a, b) => b.total - a.total);
 
+  // Aggregate by venue
+  const venueMap = {};
+  rows.forEach(r => {
+    const k = r.event_location || 'Unknown';
+    if (!venueMap[k]) venueMap[k] = { venue: k, date: r.event_date, people: new Set(), report_ids: new Set(), total: 0 };
+    venueMap[k].people.add(r.user_id);
+    venueMap[k].report_ids.add(r.report_id);
+    venueMap[k].total += parseFloat(r.amount || 0);
+  });
+  const byVenue = Object.values(venueMap)
+    .map(v => ({ venue: v.venue, date: v.date, people: v.people.size, report_count: v.report_ids.size, total: v.total }))
+    .sort((a, b) => b.total - a.total);
+
   // Summary
-  const reportIds = new Set(rows.map(r => r.report_id));
+  const reportIds  = new Set(rows.map(r => r.report_id));
+  const peopleIds  = new Set(rows.map(r => r.user_id));
+  const venueIds   = new Set(rows.map(r => r.event_location));
   const grandTotal = rows.reduce((s, r) => s + parseFloat(r.amount || 0), 0);
-  const summary = { report_count: reportIds.size, expense_count: rows.length, grand_total: grandTotal };
+  const summary = {
+    report_count:  reportIds.size,
+    expense_count: rows.length,
+    grand_total:   grandTotal,
+    venue_count:   venueIds.size,
+    people_count:  peopleIds.size
+  };
 
   // Detail (cap at 200)
   const detail = rows.slice(0, 200).map(r => ({
@@ -405,7 +426,7 @@ app.get('/api/admin/analytics', requireAdmin, async (req, res) => {
     status: r.status, vendor: r.vendor, purpose: r.purpose, amount: parseFloat(r.amount || 0), comments: r.comments
   }));
 
-  res.json({ byCategory, byUser, summary, detail, locations: allLocations.map(r => r.event_location) });
+  res.json({ byCategory, byUser, byVenue, summary, detail, locations: allLocations.map(r => r.event_location) });
   } catch(e) { console.error('Analytics error:', e); res.status(500).json({ error: e.message }); }
 });
 

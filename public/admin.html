@@ -269,14 +269,20 @@
       <!-- ── Analytics ───────────────────────────────── -->
       <div class="panel" id="panel-analytics">
         <div class="section-header">
-          <div><div class="section-title">Analytics</div><div class="section-subtitle">Audit spending by category and user</div></div>
-          <button class="btn btn-secondary btn-sm" onclick="seedDemoData()" style="margin-right:8px;">🌱 Load Demo Data</button>
+          <div><div class="section-title">Budget Analytics</div><div class="section-subtitle">Track spending by venue and identify cost issues</div></div>
+          <button class="btn btn-secondary btn-sm" onclick="seedDemoData()">🌱 Load Demo Data</button>
         </div>
 
         <!-- Filters -->
         <div class="card" style="margin-bottom:20px;">
           <div class="card-body">
             <div class="form-row">
+              <div class="form-group">
+                <label>Venue / Location</label>
+                <select id="analyticsLocation" class="form-control">
+                  <option value="">All Venues</option>
+                </select>
+              </div>
               <div class="form-group">
                 <label>User</label>
                 <select id="analyticsUser" class="form-control">
@@ -313,12 +319,6 @@
                 </select>
               </div>
               <div class="form-group">
-                <label>Venue / Location</label>
-                <select id="analyticsLocation" class="form-control">
-                  <option value="">All Locations</option>
-                </select>
-              </div>
-              <div class="form-group">
                 <label>From Date</label>
                 <input type="date" id="analyticsFrom" class="form-control">
               </div>
@@ -337,44 +337,57 @@
         <!-- Summary stat cards -->
         <div class="stats-grid" style="margin-bottom:20px;">
           <div class="stat-card blue"><div class="stat-icon">💰</div><div class="stat-value" id="anStatTotal">—</div><div class="stat-label">Total Spend</div></div>
-          <div class="stat-card gold"><div class="stat-icon">📋</div><div class="stat-value" id="anStatReports">—</div><div class="stat-label">Reports</div></div>
-          <div class="stat-card orange"><div class="stat-icon">🧾</div><div class="stat-value" id="anStatExpenses">—</div><div class="stat-label">Line Items</div></div>
-          <div class="stat-card green"><div class="stat-icon">📊</div><div class="stat-value" id="anStatAvg">—</div><div class="stat-label">Avg per Report</div></div>
+          <div class="stat-card gold"><div class="stat-icon">📍</div><div class="stat-value" id="anStatVenues">—</div><div class="stat-label">Venues</div></div>
+          <div class="stat-card orange"><div class="stat-icon">👥</div><div class="stat-value" id="anStatPeople">—</div><div class="stat-label">People</div></div>
+          <div class="stat-card green"><div class="stat-icon">📊</div><div class="stat-value" id="anStatAvgVenue">—</div><div class="stat-label">Avg Cost / Venue</div></div>
         </div>
 
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:start;">
-          <!-- Category breakdown -->
-          <div class="card">
-            <div class="card-header"><div class="card-title">Spend by Category</div></div>
-            <div class="table-wrapper">
-              <table>
-                <thead><tr><th>Category</th><th style="text-align:right">Items</th><th style="text-align:right">Total</th><th style="text-align:right">%</th></tr></thead>
-                <tbody id="anCategoryBody"><tr><td colspan="4"><div class="spinner"></div></td></tr></tbody>
-              </table>
-            </div>
+        <!-- Venue cost table -->
+        <div class="card" style="margin-bottom:20px;">
+          <div class="card-header">
+            <div><div class="card-title" id="anVenueTitle">Cost by Venue</div><div class="card-subtitle">Total spend per location — click a venue to drill in</div></div>
           </div>
+          <div class="table-wrapper">
+            <table>
+              <thead><tr><th>Venue</th><th>Date</th><th style="text-align:right">People</th><th style="text-align:right">Total Spend</th><th style="text-align:right">Avg / Person</th><th style="text-align:right">% of Total</th></tr></thead>
+              <tbody id="anVenueBody"><tr><td colspan="6" class="table-empty"><p>Run a report to see venue data</p></td></tr></tbody>
+            </table>
+          </div>
+        </div>
 
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:start;margin-bottom:20px;">
           <!-- Per-user breakdown -->
           <div class="card">
-            <div class="card-header"><div class="card-title" id="anUserTitle">Spend by User</div></div>
+            <div class="card-header"><div class="card-title" id="anUserTitle">Cost by Person</div></div>
             <div class="table-wrapper">
               <table>
-                <thead><tr><th>User</th><th style="text-align:right">Reports</th><th style="text-align:right">Items</th><th style="text-align:right">Total</th></tr></thead>
-                <tbody id="anUserBody"><tr><td colspan="4"><div class="spinner"></div></td></tr></tbody>
+                <thead><tr><th>User</th><th style="text-align:right">Reports</th><th style="text-align:right">Total</th><th style="text-align:right">vs Avg</th></tr></thead>
+                <tbody id="anUserBody"><tr><td colspan="4" class="table-empty"><p>Run a report</p></td></tr></tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Category breakdown -->
+          <div class="card">
+            <div class="card-header"><div class="card-title">Where the Money Goes</div></div>
+            <div class="table-wrapper">
+              <table>
+                <thead><tr><th>Category</th><th style="text-align:right">Total</th><th style="text-align:right">% of Spend</th></tr></thead>
+                <tbody id="anCategoryBody"><tr><td colspan="3" class="table-empty"><p>Run a report</p></td></tr></tbody>
               </table>
             </div>
           </div>
         </div>
 
-        <!-- Expense detail table -->
-        <div class="card" style="margin-top:20px;">
+        <!-- Expense line items -->
+        <div class="card">
           <div class="card-header">
             <div><div class="card-title">Expense Line Items</div><div class="card-subtitle" id="anDetailSubtitle">All matching expenses</div></div>
           </div>
           <div class="table-wrapper">
             <table>
-              <thead><tr><th>User</th><th>Event</th><th>Date</th><th>Vendor</th><th>Category</th><th style="text-align:right">Amount</th></tr></thead>
-              <tbody id="anDetailBody"><tr><td colspan="6"><div class="spinner"></div></td></tr></tbody>
+              <thead><tr><th>User</th><th>Venue</th><th>Date</th><th>Vendor</th><th>Category</th><th style="text-align:right">Amount</th></tr></thead>
+              <tbody id="anDetailBody"><tr><td colspan="6" class="table-empty"><p>Run a report</p></td></tr></tbody>
             </table>
           </div>
         </div>
