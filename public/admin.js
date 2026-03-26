@@ -64,6 +64,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.querySelectorAll('#newUserRole option[value="superadmin"]').forEach(o => o.remove());
   }
 
+  initSetupGuide();
   loadDashboard();
   loadUserFilter();
   loadNotifications();
@@ -96,6 +97,29 @@ async function loadNotifications() {
       <div style="font-size:13px;color:#111827;line-height:1.4;">${n.message}</div>
       <div style="font-size:11px;color:#9ca3af;margin-top:4px;">${n.created_at.slice(0,16).replace('T',' ')}</div>
     </div>`).join('');
+}
+
+// ─── Setup Guide ───────────────────────────────────────────
+function initSetupGuide() {
+  const dismissed = localStorage.getItem('setupGuideDismissed');
+  const guide     = document.getElementById('setupGuide');
+  const btn       = document.getElementById('setupGuideBtn');
+  if (!dismissed) {
+    guide.style.display = 'block';
+  } else {
+    btn.style.display = 'inline-block';
+  }
+}
+function dismissSetupGuide() {
+  localStorage.setItem('setupGuideDismissed', '1');
+  document.getElementById('setupGuide').style.display = 'none';
+  document.getElementById('setupGuideBtn').style.display = 'inline-block';
+}
+function reopenSetupGuide() {
+  localStorage.removeItem('setupGuideDismissed');
+  showPanel('dashboard');
+  document.getElementById('setupGuide').style.display = 'block';
+  document.getElementById('setupGuideBtn').style.display = 'none';
 }
 
 function toggleSidebar() {
