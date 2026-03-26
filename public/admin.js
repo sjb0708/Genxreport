@@ -589,8 +589,12 @@ function statusLabel(s) {
 
 // ─── Analytics ────────────────────────────────────────────────────────────
 
+let _chartCategory = null;
+let _chartPerson   = null;
+let _chartVenue    = null;
+
 async function loadAnalytics() {
-  // Populate user dropdown — fetch if not yet loaded
+  // Populate user dropdown
   const userSel = document.getElementById('analyticsUser');
   if (userSel && userSel.options.length === 1) {
     if (!allUsers.length) {
@@ -623,25 +627,182 @@ async function loadAnalytics() {
   if (!res.ok) { toast('Analytics failed to load.', 'error'); return; }
   const { byCategory, byUser, byVenue, summary, detail, locations, budget } = await res.json();
 
-  // Refresh location dropdown while preserving selection
+  // Refresh location dropdown
   const locSel = document.getElementById('analyticsLocation');
   if (locSel && locations) {
     const current = locSel.value;
-    locSel.innerHTML = '<option value="">All Locations</option>' +
+    locSel.innerHTML = '<option value="">All Venues</option>' +
       locations.map(l => `<option value="${esc(l)}"${l === current ? ' selected' : ''}>${esc(l)}</option>`).join('');
   }
 
   const fmt = n => '$' + parseFloat(n||0).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+  const fmtK = n => { const v = parseFloat(n||0); return v >= 1000 ? '$' + (v/1000).toFixed(1) + 'k' : fmt(v); };
   const grandTotal = summary.grand_total || 0;
 
-  // Summary cards
+  // ── Summary cards
   document.getElementById('anStatTotal').textContent    = fmt(grandTotal);
   document.getElementById('anStatVenues').textContent   = summary.venue_count || 0;
   document.getElementById('anStatPeople').textContent   = summary.people_count || 0;
   const avgVenue = summary.venue_count > 0 ? grandTotal / summary.venue_count : 0;
   document.getElementById('anStatAvgVenue').textContent = fmt(avgVenue);
 
-  // Venue table
+  // ── Build flagged issues list
+  const flags = [];
+  const venueBudget = budget?.total_per_show || 0;
+
+  byVenue.forEach(v => {
+    if (venueBudget > 0 && v.total > venueBudget) {
+      flags.push({ level: 'red', msg: `<strong>${esc(v.venue)}</strong> is over budget — spent ${fmt(v.total)} vs ${fmt(venueBudget)} limit (over by ${fmt(v.total - venueBudget)})` });
+    } else if (venueBudget > 0 && v.total > venueBudget * 0.8) {
+      flags.push({ level: 'yellow', msg: `<strong>${esc(v.venue)}</strong> is near budget — spent ${fmt(v.total)} of ${fmt(venueBudget)} (${((v.total/venueBudget)*100).toFixed(0)}%)` });
+    }
+  });
+
+  byCategory.forEach(r => {
+    const cb = budget?.categories?.[r.category] || 0;
+    if (cb > 0 && r.total > cb) {
+      flags.push({ level: 'red', msg: `<strong>${esc(r.category)}</strong> is over the category budget — spent ${fmt(r.total)} vs ${fmt(cb)} limit` });
+    }
+  });
+
+  const userAvg = byUser.length > 1 ? grandTotal / byUser.length : 0;
+  byUser.forEach(u => {
+    if (byUser.length > 1 && u.total > userAvg * 1.5) {
+      flags.push({ level: 'yellow', msg: `<strong>${esc(u.username)}</strong> spent ${fmt(u.total)} — ${((u.total/userAvg - 1)*100).toFixed(0)}% above the team average of ${fmt(userAvg)}` });
+    }
+  });
+
+  const flagsCard = document.getElementById('anFlagsCard');
+  if (flags.length) {
+    flagsCard.style.display = 'block';
+    flagsCard.querySelector('.card').style.border = '2px solid #fca5a5';
+    flagsCard.querySelector('.card-header').style.background = '#fff5f5';
+    flagsCard.querySelector('.card-title').style.color = '#dc2626';
+    flagsCard.querySelector('.card-title').textContent = '⚠️ Issues Requiring Attention';
+    document.getElementById('anFlagsSubtitle').textContent = `${flags.length} issue${flags.length > 1 ? 's' : ''} found`;
+    document.getElementById('anFlagsBody').innerHTML = flags.map(f => `
+      <div style="display:flex;align-items:flex-start;gap:10px;padding:8px 0;border-bottom:1px solid #fee2e2;">
+        <span style="font-size:16px;flex-shrink:0;">${f.level === 'red' ? '🔴' : '🟡'}</span>
+        <span style="font-size:13px;color:#374151;">${f.msg}</span>
+      </div>`).join('');
+  } else if (grandTotal > 0) {
+    flagsCard.style.display = 'block';
+    flagsCard.querySelector('.card').style.border = '2px solid #86efac';
+    flagsCard.querySelector('.card-header').style.background = '#f0fdf4';
+    document.getElementById('anFlagsSubtitle').textContent = 'All spending within limits';
+    document.getElementById('anFlagsBody').innerHTML = `<div style="padding:8px 0;font-size:13px;color:#16a34a;">✅ No issues found — all venues and categories are within budget.</div>`;
+    flagsCard.querySelector('.card-title').style.color = '#16a34a';
+    flagsCard.querySelector('.card-title').textContent = '✅ All Clear';
+  } else {
+    flagsCard.style.display = 'none';
+  }
+
+  // ── Chart: Category donut
+  const catColors = ['#1a3f8c','#2456a4','#b91c1c','#d97706','#16a34a','#7c3aed','#0891b2','#dc2626','#ea580c','#65a30d','#0284c7','#9333ea','#db2777','#6b7280'];
+  if (_chartCategory) _chartCategory.destroy();
+  const ctxCat = document.getElementById('chartCategory');
+  if (ctxCat && byCategory.length) {
+    _chartCategory = new Chart(ctxCat, {
+      type: 'doughnut',
+      data: {
+        labels: byCategory.map(r => r.category || 'Other'),
+        datasets: [{ data: byCategory.map(r => parseFloat(r.total.toFixed(2))), backgroundColor: catColors, borderWidth: 2, borderColor: '#fff' }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: true,
+        plugins: {
+          legend: { position: 'right', labels: { font: { size: 11 }, padding: 8, boxWidth: 12 } },
+          tooltip: { callbacks: { label: ctx => ` ${ctx.label}: ${fmt(ctx.raw)} (${grandTotal > 0 ? ((ctx.raw/grandTotal)*100).toFixed(1) : 0}%)` } }
+        }
+      }
+    });
+  }
+
+  // ── Chart: Per-person horizontal bar
+  if (_chartPerson) _chartPerson.destroy();
+  const ctxPerson = document.getElementById('chartPerson');
+  if (ctxPerson && byUser.length) {
+    const personColors = byUser.map(u => {
+      if (byUser.length > 1 && u.total > userAvg * 1.5) return '#dc2626';
+      if (byUser.length > 1 && u.total > userAvg * 1.2) return '#d97706';
+      return '#1a3f8c';
+    });
+    _chartPerson = new Chart(ctxPerson, {
+      type: 'bar',
+      data: {
+        labels: byUser.map(u => u.username),
+        datasets: [{
+          label: 'Total Spend',
+          data: byUser.map(u => parseFloat(u.total.toFixed(2))),
+          backgroundColor: personColors,
+          borderRadius: 4
+        }]
+      },
+      options: {
+        indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: { callbacks: { label: ctx => ` ${fmt(ctx.raw)}` } }
+        },
+        scales: {
+          x: { ticks: { callback: v => fmtK(v) }, grid: { color: '#f3f4f6' } },
+          y: { ticks: { font: { size: 11 } } }
+        }
+      }
+    });
+    ctxPerson.style.maxHeight = Math.max(120, byUser.length * 36) + 'px';
+  }
+  const uct = document.getElementById('anUserChartTitle');
+  if (uct) uct.textContent = category ? `Cost by Person — ${category}` : location ? `Cost by Person — ${location}` : 'Cost by Person';
+
+  // ── Chart: Venue trend (sorted by date)
+  if (_chartVenue) _chartVenue.destroy();
+  const ctxVenue = document.getElementById('chartVenue');
+  const venuesSorted = [...byVenue].sort((a,b) => (a.date||'').localeCompare(b.date||''));
+  if (ctxVenue && venuesSorted.length) {
+    const vColors = venuesSorted.map(v => {
+      if (venueBudget > 0 && v.total > venueBudget) return '#dc2626';
+      if (venueBudget > 0 && v.total > venueBudget * 0.8) return '#d97706';
+      return '#1a3f8c';
+    });
+    _chartVenue = new Chart(ctxVenue, {
+      type: 'bar',
+      data: {
+        labels: venuesSorted.map(v => v.venue),
+        datasets: [
+          {
+            label: 'Actual Spend',
+            data: venuesSorted.map(v => parseFloat(v.total.toFixed(2))),
+            backgroundColor: vColors,
+            borderRadius: 4
+          },
+          ...(venueBudget > 0 ? [{
+            label: 'Budget',
+            data: venuesSorted.map(() => venueBudget),
+            type: 'line',
+            borderColor: '#9ca3af',
+            borderDash: [6, 3],
+            borderWidth: 2,
+            pointRadius: 0,
+            fill: false
+          }] : [])
+        ]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: {
+          legend: { display: venueBudget > 0, labels: { font: { size: 11 } } },
+          tooltip: { callbacks: { label: ctx => ` ${ctx.dataset.label}: ${fmt(ctx.raw)}` } }
+        },
+        scales: {
+          x: { ticks: { font: { size: 10 }, maxRotation: 30 } },
+          y: { ticks: { callback: v => fmtK(v) }, grid: { color: '#f3f4f6' } }
+        }
+      }
+    });
+  }
+
+  // ── Venue table
   const venueTitle = document.getElementById('anVenueTitle');
   if (venueTitle) venueTitle.textContent = location ? `${location} — Cost Summary` : 'Cost by Venue';
   document.getElementById('anVenueBody').innerHTML = byVenue.length
@@ -649,50 +810,43 @@ async function loadAnalytics() {
         const pct    = grandTotal > 0 ? ((v.total / grandTotal) * 100).toFixed(1) : '0.0';
         const avgPer = v.people > 0 ? v.total / v.people : 0;
         const isHigh = byVenue.length > 1 && v.total > (grandTotal / byVenue.length) * 1.5;
-        const bar    = `<div style="display:inline-block;width:${Math.max(4, Math.round((v.total/byVenue[0].total)*80))}px;height:6px;background:${isHigh?'#dc2626':'#1a3f8c'};border-radius:3px;margin-right:8px;vertical-align:middle;"></div>`;
-        const venueBudget = budget?.total_per_show || 0;
-        const budgetIndicator = venueBudget > 0 ? (() => {
-          const bpct = (v.total / venueBudget) * 100;
-          const color = bpct > 100 ? '#dc2626' : bpct > 80 ? '#d97706' : '#16a34a';
-          const icon  = bpct > 100 ? '🔴' : bpct > 80 ? '🟡' : '🟢';
-          return `<span style="color:${color};font-size:11px;margin-left:6px;">${icon} ${bpct.toFixed(0)}% of $${venueBudget.toLocaleString()} budget</span>`;
-        })() : '';
-        return `<tr style="${isHigh ? 'background:#fff7f7;' : i===0 ? 'background:#f0f7ff;' : ''}"
-                    onclick="document.getElementById('analyticsLocation').value='${esc(v.venue)}';loadAnalytics();"
-                    style="cursor:pointer;${isHigh ? 'background:#fff7f7;' : i===0 ? 'background:#f0f7ff;' : ''}">
-          <td><strong>${esc(v.venue)}</strong>${isHigh ? ' <span style="color:#dc2626;" title="High spend venue">⚠️</span>' : ''}</td>
+        let budgetStatus = '<span style="color:#d1d5db;font-size:12px;">No budget set</span>';
+        if (venueBudget > 0) {
+          const bp = (v.total / venueBudget) * 100;
+          const color = bp > 100 ? '#dc2626' : bp > 80 ? '#d97706' : '#16a34a';
+          const icon  = bp > 100 ? '🔴' : bp > 80 ? '🟡' : '🟢';
+          budgetStatus = `<span style="color:${color};font-size:12px;font-weight:700;">${icon} ${bp.toFixed(0)}% of ${fmt(venueBudget)}</span>`;
+        }
+        return `<tr style="cursor:pointer;${isHigh ? 'background:#fff7f7;' : i===0 ? 'background:#f0f7ff;' : ''}"
+                    onclick="document.getElementById('analyticsLocation').value='${esc(v.venue)}';loadAnalytics();">
+          <td><strong>${esc(v.venue)}</strong>${isHigh ? ' <span style="color:#dc2626;">⚠️</span>' : ''}</td>
           <td style="color:#6b7280;">${v.date||'—'}</td>
           <td style="text-align:right;color:#6b7280;">${v.people}</td>
-          <td style="text-align:right;font-weight:700;white-space:nowrap;">${bar}${fmt(v.total)}${budgetIndicator}</td>
+          <td style="text-align:right;font-weight:700;">${fmt(v.total)}</td>
           <td style="text-align:right;color:#6b7280;">${fmt(avgPer)}</td>
-          <td style="text-align:right;color:#6b7280;">${pct}%</td>
+          <td style="text-align:right;">${budgetStatus}</td>
         </tr>`;
       }).join('') + `<tr style="border-top:2px solid #e5e7eb;background:#f9fafb;font-weight:700;">
         <td>TOTAL</td><td></td><td></td>
         <td style="text-align:right;color:#1a3f8c;">${fmt(grandTotal)}</td>
-        <td></td><td style="text-align:right;">100%</td>
+        <td></td><td></td>
       </tr>`
     : `<tr><td colspan="6" class="table-empty"><div class="table-empty-icon">📍</div><p>No venue data — run a report</p></td></tr>`;
 
-  // User table
-  const userAvg = byUser.length > 1 ? grandTotal / byUser.length : 0;
-  const userTitle = document.getElementById('anUserTitle');
+  // ── User table
   const ctxLabel = [location, category].filter(Boolean).join(' · ');
+  const userTitle = document.getElementById('anUserTitle');
   if (userTitle) userTitle.textContent = ctxLabel ? `Cost by Person — ${ctxLabel}` : 'Cost by Person';
-
   document.getElementById('anUserBody').innerHTML = byUser.length
     ? byUser.map((r, i) => {
-        const isHigh   = byUser.length > 1 && r.total > userAvg * 1.5;
-        const vsAvg    = userAvg > 0 ? ((r.total - userAvg) / userAvg * 100) : 0;
-        const vsLabel  = userAvg > 0 ? `${vsAvg >= 0 ? '+' : ''}${vsAvg.toFixed(0)}%` : '—';
-        const vsColor  = vsAvg > 50 ? '#dc2626' : vsAvg > 0 ? '#d97706' : '#16a34a';
-        const bar      = byUser[0].total > 0
-          ? `<div style="display:inline-block;width:${Math.max(4,Math.round((r.total/byUser[0].total)*80))}px;height:6px;background:${isHigh?'#dc2626':'#1a3f8c'};border-radius:3px;margin-right:8px;vertical-align:middle;"></div>`
-          : '';
+        const isHigh  = byUser.length > 1 && r.total > userAvg * 1.5;
+        const vsAvg   = userAvg > 0 ? ((r.total - userAvg) / userAvg * 100) : 0;
+        const vsLabel = userAvg > 0 ? `${vsAvg >= 0 ? '+' : ''}${vsAvg.toFixed(0)}%` : '—';
+        const vsColor = vsAvg > 50 ? '#dc2626' : vsAvg > 20 ? '#d97706' : '#16a34a';
         return `<tr style="${isHigh ? 'background:#fff7f7;' : i===0 ? 'background:#f0f7ff;' : ''}">
-          <td><strong>${esc(r.username)}</strong>${isHigh ? ' <span style="color:#dc2626;" title="Above average spender">⚠️</span>' : ''}</td>
+          <td><strong>${esc(r.username)}</strong>${isHigh ? ' <span style="color:#dc2626;">⚠️</span>' : ''}</td>
           <td style="text-align:right;color:#6b7280;">${r.report_count}</td>
-          <td style="text-align:right;font-weight:700;white-space:nowrap;">${bar}${fmt(r.total)}</td>
+          <td style="text-align:right;font-weight:700;">${fmt(r.total)}</td>
           <td style="text-align:right;font-weight:700;color:${userAvg>0?vsColor:'#6b7280'};font-size:12px;">${vsLabel}</td>
         </tr>`;
       }).join('') + `<tr style="border-top:2px solid #e5e7eb;background:#f9fafb;font-weight:700;">
@@ -700,17 +854,17 @@ async function loadAnalytics() {
       </tr>`
     : `<tr><td colspan="4" class="table-empty"><div class="table-empty-icon">👥</div><p>No data</p></td></tr>`;
 
-  // Category table
+  // ── Category table
   document.getElementById('anCategoryBody').innerHTML = byCategory.length
     ? byCategory.map(r => {
         const pct = grandTotal > 0 ? ((r.total / grandTotal) * 100).toFixed(1) : '0.0';
         const bar = `<div style="display:inline-block;width:${Math.max(4,Math.round(parseFloat(pct)))}%;max-width:80px;height:6px;background:#1a3f8c;border-radius:3px;margin-right:6px;vertical-align:middle;"></div>`;
         const catBudget = budget?.categories?.[r.category] || 0;
         const budgetCell = catBudget > 0 ? (() => {
-          const bpct = (r.total / catBudget) * 100;
-          const color = bpct > 100 ? '#dc2626' : bpct > 80 ? '#d97706' : '#16a34a';
-          const icon  = bpct > 100 ? '🔴' : bpct > 80 ? '🟡' : '🟢';
-          return `<span style="color:${color};font-size:11px;">${icon} ${bpct.toFixed(0)}% of $${catBudget}</span>`;
+          const bp = (r.total / catBudget) * 100;
+          const color = bp > 100 ? '#dc2626' : bp > 80 ? '#d97706' : '#16a34a';
+          const icon  = bp > 100 ? '🔴' : bp > 80 ? '🟡' : '🟢';
+          return `<span style="color:${color};font-size:12px;font-weight:700;">${icon} ${bp.toFixed(0)}% of ${fmt(catBudget)}</span>`;
         })() : '<span style="color:#d1d5db;font-size:11px;">No limit</span>';
         return `<tr>
           <td><strong>${esc(r.category||'Uncategorized')}</strong></td>
@@ -724,7 +878,7 @@ async function loadAnalytics() {
       </tr>`
     : `<tr><td colspan="4" class="table-empty"><div class="table-empty-icon">📊</div><p>No data</p></td></tr>`;
 
-  // Detail table
+  // ── Detail table
   document.getElementById('anDetailSubtitle').textContent =
     `${detail.length} line item${detail.length !== 1 ? 's' : ''}${detail.length === 200 ? ' (first 200 shown)' : ''}`;
   document.getElementById('anDetailBody').innerHTML = detail.length

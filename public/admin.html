@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>GENX TAKEOVER – Admin Panel</title>
   <link rel="stylesheet" href="/style.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 </head>
 <body>
 <div id="toastContainer"></div>
@@ -268,129 +269,159 @@
       <!-- ── Export ──────────────────────────────────── -->
       <!-- ── Analytics ───────────────────────────────── -->
       <div class="panel" id="panel-analytics">
-        <div class="section-header">
-          <div><div class="section-title">Budget Analytics</div><div class="section-subtitle">Track spending by venue and identify cost issues</div></div>
+  <div class="section-header">
+    <div><div class="section-title">Budget Analytics</div><div class="section-subtitle">Track spending by venue and identify cost issues</div></div>
+  </div>
+
+  <!-- Filters -->
+  <div class="card" style="margin-bottom:20px;">
+    <div class="card-body">
+      <div class="form-row">
+        <div class="form-group">
+          <label>Venue / Location</label>
+          <select id="analyticsLocation" class="form-control"><option value="">All Venues</option></select>
         </div>
-
-        <!-- Filters -->
-        <div class="card" style="margin-bottom:20px;">
-          <div class="card-body">
-            <div class="form-row">
-              <div class="form-group">
-                <label>Venue / Location</label>
-                <select id="analyticsLocation" class="form-control">
-                  <option value="">All Venues</option>
-                </select>
-              </div>
-              <div class="form-group">
-                <label>User</label>
-                <select id="analyticsUser" class="form-control">
-                  <option value="">All Users</option>
-                </select>
-              </div>
-              <div class="form-group">
-                <label>Category</label>
-                <select id="analyticsCategory" class="form-control">
-                  <option value="">All Categories</option>
-                  <option value="Airfare">Airfare</option>
-                  <option value="Hotel/Lodging">Hotel / Lodging</option>
-                  <option value="Transportation/Gas">Transportation / Gas</option>
-                  <option value="Car Rental">Car Rental</option>
-                  <option value="Food &amp; Beverage">Food &amp; Beverage</option>
-                  <option value="Parking">Parking</option>
-                  <option value="Entertainment">Entertainment</option>
-                  <option value="Equipment Rental">Equipment Rental</option>
-                  <option value="Office Supplies">Office Supplies</option>
-                  <option value="Marketing/Promotion">Marketing / Promotion</option>
-                  <option value="Wardrobe/Costumes">Wardrobe / Costumes</option>
-                  <option value="Professional Services">Professional Services</option>
-                  <option value="Telecommunications">Telecommunications</option>
-                  <option value="Miscellaneous">Miscellaneous</option>
-                </select>
-              </div>
-              <div class="form-group">
-                <label>Status</label>
-                <select id="analyticsStatus" class="form-control">
-                  <option value="">All</option>
-                  <option value="paid">Paid</option>
-                  <option value="approved">Approved</option>
-                  <option value="submitted">Submitted</option>
-                </select>
-              </div>
-              <div class="form-group">
-                <label>From Date</label>
-                <input type="date" id="analyticsFrom" class="form-control">
-              </div>
-              <div class="form-group">
-                <label>To Date</label>
-                <input type="date" id="analyticsTo" class="form-control">
-              </div>
-            </div>
-          </div>
-          <div class="modal-footer" style="border-top:1px solid #e5e7eb;gap:8px;">
-            <button class="btn btn-secondary btn-sm" onclick="resetAnalyticsFilters()">Clear</button>
-            <button class="btn btn-primary" onclick="loadAnalytics()">Run Report</button>
-          </div>
+        <div class="form-group">
+          <label>User</label>
+          <select id="analyticsUser" class="form-control"><option value="">All Users</option></select>
         </div>
-
-        <!-- Summary stat cards -->
-        <div class="stats-grid" style="margin-bottom:20px;">
-          <div class="stat-card blue"><div class="stat-icon">💰</div><div class="stat-value" id="anStatTotal">—</div><div class="stat-label">Total Spend</div></div>
-          <div class="stat-card gold"><div class="stat-icon">📍</div><div class="stat-value" id="anStatVenues">—</div><div class="stat-label">Venues</div></div>
-          <div class="stat-card orange"><div class="stat-icon">👥</div><div class="stat-value" id="anStatPeople">—</div><div class="stat-label">People</div></div>
-          <div class="stat-card green"><div class="stat-icon">📊</div><div class="stat-value" id="anStatAvgVenue">—</div><div class="stat-label">Avg Cost / Venue</div></div>
+        <div class="form-group">
+          <label>Category</label>
+          <select id="analyticsCategory" class="form-control">
+            <option value="">All Categories</option>
+            <option value="Airfare">Airfare</option>
+            <option value="Hotel/Lodging">Hotel / Lodging</option>
+            <option value="Transportation/Gas">Transportation / Gas</option>
+            <option value="Car Rental">Car Rental</option>
+            <option value="Food &amp; Beverage">Food &amp; Beverage</option>
+            <option value="Parking">Parking</option>
+            <option value="Entertainment">Entertainment</option>
+            <option value="Equipment Rental">Equipment Rental</option>
+            <option value="Office Supplies">Office Supplies</option>
+            <option value="Marketing/Promotion">Marketing / Promotion</option>
+            <option value="Wardrobe/Costumes">Wardrobe / Costumes</option>
+            <option value="Professional Services">Professional Services</option>
+            <option value="Telecommunications">Telecommunications</option>
+            <option value="Miscellaneous">Miscellaneous</option>
+          </select>
         </div>
-
-        <!-- Venue cost table -->
-        <div class="card" style="margin-bottom:20px;">
-          <div class="card-header">
-            <div><div class="card-title" id="anVenueTitle">Cost by Venue</div><div class="card-subtitle">Total spend per location — click a venue to drill in</div></div>
-          </div>
-          <div class="table-wrapper">
-            <table>
-              <thead><tr><th>Venue</th><th>Date</th><th style="text-align:right">People</th><th style="text-align:right">Total Spend</th><th style="text-align:right">Avg / Person</th><th style="text-align:right">% of Total</th></tr></thead>
-              <tbody id="anVenueBody"><tr><td colspan="6" class="table-empty"><p>Run a report to see venue data</p></td></tr></tbody>
-            </table>
-          </div>
+        <div class="form-group">
+          <label>Status</label>
+          <select id="analyticsStatus" class="form-control">
+            <option value="">All</option>
+            <option value="paid">Paid</option>
+            <option value="approved">Approved</option>
+            <option value="submitted">Submitted</option>
+          </select>
         </div>
-
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:start;margin-bottom:20px;">
-          <!-- Per-user breakdown -->
-          <div class="card">
-            <div class="card-header"><div class="card-title" id="anUserTitle">Cost by Person</div></div>
-            <div class="table-wrapper">
-              <table>
-                <thead><tr><th>User</th><th style="text-align:right">Reports</th><th style="text-align:right">Total</th><th style="text-align:right">vs Avg</th></tr></thead>
-                <tbody id="anUserBody"><tr><td colspan="4" class="table-empty"><p>Run a report</p></td></tr></tbody>
-              </table>
-            </div>
-          </div>
-
-          <!-- Category breakdown -->
-          <div class="card">
-            <div class="card-header"><div class="card-title">Where the Money Goes</div></div>
-            <div class="table-wrapper">
-              <table>
-                <thead><tr><th>Category</th><th style="text-align:right">Total</th><th style="text-align:right">% of Spend</th><th style="text-align:right">Budget</th></tr></thead>
-                <tbody id="anCategoryBody"><tr><td colspan="4" class="table-empty"><p>Run a report</p></td></tr></tbody>
-              </table>
-            </div>
-          </div>
+        <div class="form-group">
+          <label>From Date</label>
+          <input type="date" id="analyticsFrom" class="form-control">
         </div>
-
-        <!-- Expense line items -->
-        <div class="card">
-          <div class="card-header">
-            <div><div class="card-title">Expense Line Items</div><div class="card-subtitle" id="anDetailSubtitle">All matching expenses</div></div>
-          </div>
-          <div class="table-wrapper">
-            <table>
-              <thead><tr><th>User</th><th>Venue</th><th>Date</th><th>Vendor</th><th>Category</th><th style="text-align:right">Amount</th></tr></thead>
-              <tbody id="anDetailBody"><tr><td colspan="6" class="table-empty"><p>Run a report</p></td></tr></tbody>
-            </table>
-          </div>
+        <div class="form-group">
+          <label>To Date</label>
+          <input type="date" id="analyticsTo" class="form-control">
         </div>
       </div>
+    </div>
+    <div class="modal-footer" style="border-top:1px solid #e5e7eb;gap:8px;">
+      <button class="btn btn-secondary btn-sm" onclick="resetAnalyticsFilters()">Clear</button>
+      <button class="btn btn-primary" onclick="loadAnalytics()">Run Report</button>
+    </div>
+  </div>
+
+  <!-- Flagged Issues -->
+  <div id="anFlagsCard" style="display:none;margin-bottom:20px;">
+    <div class="card" style="border:2px solid #fca5a5;">
+      <div class="card-header" style="background:#fff5f5;">
+        <div><div class="card-title" style="color:#dc2626;">⚠️ Issues Requiring Attention</div><div class="card-subtitle" id="anFlagsSubtitle"></div></div>
+      </div>
+      <div class="card-body" id="anFlagsBody" style="padding:12px 20px;"></div>
+    </div>
+  </div>
+
+  <!-- Summary stat cards -->
+  <div class="stats-grid" style="margin-bottom:20px;">
+    <div class="stat-card blue"><div class="stat-icon">💰</div><div class="stat-value" id="anStatTotal">—</div><div class="stat-label">Total Spend</div></div>
+    <div class="stat-card gold"><div class="stat-icon">📍</div><div class="stat-value" id="anStatVenues">—</div><div class="stat-label">Venues</div></div>
+    <div class="stat-card orange"><div class="stat-icon">👥</div><div class="stat-value" id="anStatPeople">—</div><div class="stat-label">People</div></div>
+    <div class="stat-card green"><div class="stat-icon">📊</div><div class="stat-value" id="anStatAvgVenue">—</div><div class="stat-label">Avg Cost / Venue</div></div>
+  </div>
+
+  <!-- Charts row -->
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:20px;">
+    <div class="card">
+      <div class="card-header"><div class="card-title">Where the Money Goes</div><div class="card-subtitle">Spend by category</div></div>
+      <div class="card-body" style="padding:20px;display:flex;align-items:center;justify-content:center;min-height:280px;">
+        <canvas id="chartCategory" style="max-height:260px;"></canvas>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header"><div class="card-title" id="anUserChartTitle">Cost by Person</div><div class="card-subtitle">Total spend per team member</div></div>
+      <div class="card-body" style="padding:20px;min-height:280px;">
+        <canvas id="chartPerson" style="max-height:260px;"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- Venue trend chart -->
+  <div class="card" style="margin-bottom:20px;">
+    <div class="card-header"><div class="card-title">Spend by Venue</div><div class="card-subtitle">Cost per show — sorted by date</div></div>
+    <div class="card-body" style="padding:20px;min-height:220px;">
+      <canvas id="chartVenue" style="max-height:200px;"></canvas>
+    </div>
+  </div>
+
+  <!-- Venue detail table -->
+  <div class="card" style="margin-bottom:20px;">
+    <div class="card-header">
+      <div><div class="card-title" id="anVenueTitle">Cost by Venue</div><div class="card-subtitle">Click a row to filter to that venue</div></div>
+    </div>
+    <div class="table-wrapper">
+      <table>
+        <thead><tr><th>Venue</th><th>Date</th><th style="text-align:right">People</th><th style="text-align:right">Total Spend</th><th style="text-align:right">Avg / Person</th><th style="text-align:right">Budget Status</th></tr></thead>
+        <tbody id="anVenueBody"><tr><td colspan="6" class="table-empty"><p>Run a report to see venue data</p></td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:20px;align-items:start;">
+    <!-- Per-user table -->
+    <div class="card">
+      <div class="card-header"><div class="card-title" id="anUserTitle">Cost by Person</div></div>
+      <div class="table-wrapper">
+        <table>
+          <thead><tr><th>User</th><th style="text-align:right">Reports</th><th style="text-align:right">Total</th><th style="text-align:right">vs Avg</th></tr></thead>
+          <tbody id="anUserBody"><tr><td colspan="4" class="table-empty"><p>Run a report</p></td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Category table -->
+    <div class="card">
+      <div class="card-header"><div class="card-title">Category Breakdown</div></div>
+      <div class="table-wrapper">
+        <table>
+          <thead><tr><th>Category</th><th style="text-align:right">Total</th><th style="text-align:right">% of Spend</th><th style="text-align:right">Budget</th></tr></thead>
+          <tbody id="anCategoryBody"><tr><td colspan="4" class="table-empty"><p>Run a report</p></td></tr></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Line items -->
+  <div class="card">
+    <div class="card-header">
+      <div><div class="card-title">Expense Line Items</div><div class="card-subtitle" id="anDetailSubtitle">All matching expenses</div></div>
+    </div>
+    <div class="table-wrapper">
+      <table>
+        <thead><tr><th>User</th><th>Venue</th><th>Date</th><th>Vendor</th><th>Category</th><th style="text-align:right">Amount</th></tr></thead>
+        <tbody id="anDetailBody"><tr><td colspan="6" class="table-empty"><p>Run a report</p></td></tr></tbody>
+      </table>
+    </div>
+  </div>
+</div>
 
       <div class="panel" id="panel-export">
         <div class="section-header">
