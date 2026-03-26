@@ -515,7 +515,17 @@ app.post('/api/reports', requireLogin, async (req, res) => {
 });
 
 async function getFullReport(id) {
-  const report = (await sql`SELECT r.*, u.username, u.email FROM reports r LEFT JOIN users u ON u.id=r.user_id WHERE r.id=${id}`)[0];
+  const report = (await sql`
+    SELECT r.*,
+           u.username,  u.email,
+           ru.username AS reviewed_by_username,
+           pu.username AS paid_by_username
+    FROM reports r
+    LEFT JOIN users u  ON u.id = r.user_id
+    LEFT JOIN users ru ON ru.id = r.reviewed_by
+    LEFT JOIN users pu ON pu.id = r.paid_by
+    WHERE r.id=${id}
+  `)[0];
   if (!report) return null;
   const expenses = await sql`SELECT * FROM expenses WHERE report_id=${id} ORDER BY sort_order, id`;
   report.expenses = await Promise.all(expenses.map(async exp => ({

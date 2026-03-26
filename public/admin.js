@@ -424,12 +424,12 @@ async function openReportDetail(reportId) {
     <div style="margin-top:18px;padding-top:14px;border-top:1px solid #e5e7eb;">
       <div style="font-size:11px;font-weight:700;color:#9ca3af;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;">Timeline</div>
       <div style="display:flex;flex-direction:column;gap:5px;font-size:12px;color:#6b7280;">
-        ${r.created_at   ? `<div>📝 <strong>Created</strong> — ${fmtTs(r.created_at)}</div>` : ''}
+        ${r.created_at   ? `<div>📝 <strong>Created</strong> by ${esc(r.username||'—')} — ${fmtTs(r.created_at)}</div>` : ''}
         ${r.submitted_at ? `<div>📤 <strong>Submitted</strong> by ${esc(r.username||'—')} — ${fmtTs(r.submitted_at)}</div>` : ''}
-        ${r.reviewed_at && r.status === 'under_review' ? `<div>🔍 <strong>Under Review</strong> — ${fmtTs(r.reviewed_at)}</div>` : ''}
-        ${r.reviewed_at && r.status === 'approved'     ? `<div>✅ <strong>Approved</strong> — ${fmtTs(r.reviewed_at)}</div>` : ''}
-        ${r.reviewed_at && r.status === 'rejected'     ? `<div>❌ <strong>Rejected</strong>${r.admin_notes?' — "'+esc(r.admin_notes)+'"':''} — ${fmtTs(r.reviewed_at)}</div>` : ''}
-        ${r.paid_at      ? `<div>💳 <strong>Paid</strong>${r.paid_notes?' — '+esc(r.paid_notes):''} — ${fmtTs(r.paid_at)}</div>` : ''}
+        ${r.reviewed_at && r.status === 'under_review' ? `<div>🔍 <strong>Marked Under Review</strong> by ${esc(r.reviewed_by_username||'admin')} — ${fmtTs(r.reviewed_at)}</div>` : ''}
+        ${r.reviewed_at && r.status === 'approved'     ? `<div>✅ <strong>Approved</strong> by ${esc(r.reviewed_by_username||'admin')} — ${fmtTs(r.reviewed_at)}</div>` : ''}
+        ${r.reviewed_at && r.status === 'rejected'     ? `<div>❌ <strong>Rejected</strong> by ${esc(r.reviewed_by_username||'admin')}${r.admin_notes?' — "'+esc(r.admin_notes)+'"':''} — ${fmtTs(r.reviewed_at)}</div>` : ''}
+        ${r.paid_at      ? `<div>💳 <strong>Paid</strong> by ${esc(r.paid_by_username||'admin')}${r.paid_notes?' — '+esc(r.paid_notes):''} — ${fmtTs(r.paid_at)}</div>` : ''}
       </div>
     </div>`;
 
