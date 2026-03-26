@@ -163,7 +163,7 @@ async function loadDashboard() {
 
   // Stats with counter animation
   const approved      = reports.filter(r => r.status === 'approved' || r.status === 'paid');
-  const approvedTotal = approved.reduce((s,r) => s + parseFloat(r.total||0), 0);
+  const approvedTotal = reports.filter(r => r.status === 'paid').reduce((s,r) => s + parseFloat(r.total||0), 0);
 
   animateCounter(document.getElementById('statUsers'),   users.filter(u=>u.active).length);
   animateCounter(document.getElementById('statReports'), reports.length);
