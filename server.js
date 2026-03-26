@@ -99,6 +99,15 @@ async function initDB() {
   `;
   await sql`ALTER TABLE receipts ADD COLUMN IF NOT EXISTS file_data TEXT`;
 
+  // Migrate reports table — add columns that may not exist in older deployments
+  await sql`ALTER TABLE reports ADD COLUMN IF NOT EXISTS admin_notes TEXT`;
+  await sql`ALTER TABLE reports ADD COLUMN IF NOT EXISTS submitted_at TEXT`;
+  await sql`ALTER TABLE reports ADD COLUMN IF NOT EXISTS reviewed_at TEXT`;
+  await sql`ALTER TABLE reports ADD COLUMN IF NOT EXISTS reviewed_by TEXT`;
+  await sql`ALTER TABLE reports ADD COLUMN IF NOT EXISTS paid_at TEXT`;
+  await sql`ALTER TABLE reports ADD COLUMN IF NOT EXISTS paid_notes TEXT`;
+  await sql`ALTER TABLE reports ADD COLUMN IF NOT EXISTS paid_by TEXT`;
+
   await sql`
     CREATE TABLE IF NOT EXISTS tour_stops (
       id         TEXT PRIMARY KEY,
