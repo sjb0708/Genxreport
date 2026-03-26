@@ -590,9 +590,13 @@ function statusLabel(s) {
 // ─── Analytics ────────────────────────────────────────────────────────────
 
 async function loadAnalytics() {
-  // Populate user dropdown from allUsers if available
+  // Populate user dropdown — fetch if not yet loaded
   const userSel = document.getElementById('analyticsUser');
-  if (userSel && userSel.options.length === 1 && allUsers.length) {
+  if (userSel && userSel.options.length === 1) {
+    if (!allUsers.length) {
+      const r = await fetch('/api/admin/users');
+      if (r.ok) allUsers = await r.json();
+    }
     allUsers.forEach(u => {
       const o = document.createElement('option');
       o.value = u.id; o.textContent = u.username;
