@@ -139,23 +139,9 @@ async function initDB() {
   await sql`ALTER TABLE reports ADD COLUMN IF NOT EXISTS paid_notes TEXT`;
   await sql`ALTER TABLE reports ADD COLUMN IF NOT EXISTS review_started_at TEXT`;
 
-  // Seed logo into DB from disk if not already stored (ensures it survives Vercel cold starts)
-  const existingLogo = await getSetting('logo_b64');
-  if (!existingLogo) {
-    for (const ext of ['.png','.jpg','.jpeg','.webp']) {
-      const fp = path.join(__dir, 'public', 'assets', 'logo'+ext);
-      if (fs.existsSync(fp)) {
-        try {
-          const buf = fs.readFileSync(fp);
-          const mime = ext === '.webp' ? 'image/webp' : ext === '.png' ? 'image/png' : 'image/jpeg';
-          await upsertSetting('logo_b64', `data:${mime};base64,${buf.toString('base64')}`);
-          await upsertSetting('logo_ext', ext);
-          console.log('Logo seeded into DB from', fp);
-        } catch(e) { console.warn('Logo seed failed:', e.message); }
-        break;
-      }
-    }
-  }
+  // Always store the correct JPEG logo in DB (overwrites any old WebP that breaks pdfkit)
+  await upsertSetting('logo_b64', LOGO_B64_FALLBACK);
+  await upsertSetting('logo_ext', '.jpg');
 
   // Default superadmin on first run
   const userCount = (await sql`SELECT COUNT(*) as c FROM users`)[0];
@@ -1131,16 +1117,7 @@ function findLogo() {
 }
 
 async function getLogoBuffer() {
-  // 1. Admin-uploaded logo from DB
-  const b64 = await getSetting('logo_b64');
-  if (b64) {
-    const [, data] = b64.split(',');
-    return Buffer.from(data, 'base64');
-  }
-  // 2. Disk file (local dev)
-  const fp = findLogo();
-  if (fp) return fs.readFileSync(fp);
-  // 3. Hardcoded fallback — always works on Vercel
+  // Use hardcoded JPEG — skip DB entirely (DB may contain old WebP which pdfkit cannot render)
   const [, data] = LOGO_B64_FALLBACK.split(',');
   return Buffer.from(data, 'base64');
 }
