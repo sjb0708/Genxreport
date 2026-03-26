@@ -408,6 +408,7 @@ function renderReportDetail() {
 function renderExpenses() {
   const r      = currentReport;
   const isDraft= r.status === 'draft';
+  const isAdmin= currentUser && (currentUser.role === 'admin' || currentUser.role === 'superadmin');
   const el     = document.getElementById('expensesList');
   const total  = (r.expenses||[]).reduce((s, e) => s + parseFloat(e.amount||0), 0);
 
