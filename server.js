@@ -347,10 +347,9 @@ app.delete('/api/tour-stops/:id', requireAdmin, async (req, res) => {
 // Drafts not updated in 5+ days
 app.get('/api/admin/analytics', requireAdmin, async (req, res) => {
   try {
-  const { user_id, category, status, from, to } = req.query;
+  const { user_id, category, status, from, to, location } = req.query;
 
   // Fetch all expenses joined with reports+users, then filter in JS
-  // (Neon tagged-template client doesn't support .unsafe() for dynamic WHERE)
   let rows = await sql`
     SELECT e.id, e.vendor, e.purpose, e.amount, e.comments, e.sort_order,
            r.id as report_id, r.event_location, r.event_date, r.status, r.user_id,
@@ -362,12 +361,16 @@ app.get('/api/admin/analytics', requireAdmin, async (req, res) => {
     ORDER BY r.event_date DESC, e.sort_order ASC
   `;
 
+  // Also return all distinct locations for the dropdown
+  const allLocations = await sql`SELECT DISTINCT event_location FROM reports WHERE status != 'draft' AND event_location != '' ORDER BY event_location ASC`;
+
   // Apply filters in JS
   if (user_id)  rows = rows.filter(r => r.user_id === user_id);
   if (status)   rows = rows.filter(r => r.status === status);
   if (from)     rows = rows.filter(r => r.event_date >= from);
   if (to)       rows = rows.filter(r => r.event_date <= to);
   if (category) rows = rows.filter(r => r.purpose === category);
+  if (location) rows = rows.filter(r => r.event_location === location);
 
   // Aggregate by category
   const catMap = {};
@@ -402,7 +405,7 @@ app.get('/api/admin/analytics', requireAdmin, async (req, res) => {
     status: r.status, vendor: r.vendor, purpose: r.purpose, amount: parseFloat(r.amount || 0), comments: r.comments
   }));
 
-  res.json({ byCategory, byUser, summary, detail });
+  res.json({ byCategory, byUser, summary, detail, locations: allLocations.map(r => r.event_location) });
   } catch(e) { console.error('Analytics error:', e); res.status(500).json({ error: e.message }); }
 });
 

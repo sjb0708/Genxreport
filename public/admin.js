@@ -609,6 +609,7 @@ async function loadAnalytics() {
   const status   = document.getElementById('analyticsStatus')?.value || '';
   const from     = document.getElementById('analyticsFrom')?.value || '';
   const to       = document.getElementById('analyticsTo')?.value || '';
+  const location = document.getElementById('analyticsLocation')?.value || '';
 
   const params = new URLSearchParams();
   if (user_id)  params.set('user_id',  user_id);
@@ -616,10 +617,19 @@ async function loadAnalytics() {
   if (status)   params.set('status',   status);
   if (from)     params.set('from',     from);
   if (to)       params.set('to',       to);
+  if (location) params.set('location', location);
 
   const res = await fetch('/api/admin/analytics?' + params.toString());
   if (!res.ok) { toast('Analytics failed to load.', 'error'); return; }
-  const { byCategory, byUser, summary, detail } = await res.json();
+  const { byCategory, byUser, summary, detail, locations } = await res.json();
+
+  // Refresh location dropdown while preserving selection
+  const locSel = document.getElementById('analyticsLocation');
+  if (locSel && locations) {
+    const current = locSel.value;
+    locSel.innerHTML = '<option value="">All Locations</option>' +
+      locations.map(l => `<option value="${esc(l)}"${l === current ? ' selected' : ''}>${esc(l)}</option>`).join('');
+  }
 
   const fmt = n => '$' + parseFloat(n||0).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
   const grandTotal = summary.grand_total || 0;
@@ -700,6 +710,7 @@ function resetAnalyticsFilters() {
   document.getElementById('analyticsUser').value     = '';
   document.getElementById('analyticsCategory').value = '';
   document.getElementById('analyticsStatus').value   = '';
+  document.getElementById('analyticsLocation').value = '';
   document.getElementById('analyticsFrom').value     = '';
   document.getElementById('analyticsTo').value       = '';
   loadAnalytics();
