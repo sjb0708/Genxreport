@@ -138,6 +138,24 @@ async function initDB() {
   await sql`ALTER TABLE reports ADD COLUMN IF NOT EXISTS paid_notes TEXT`;
   await sql`ALTER TABLE reports ADD COLUMN IF NOT EXISTS review_started_at TEXT`;
 
+  // Seed logo into DB from disk if not already stored (ensures it survives Vercel cold starts)
+  const existingLogo = await getSetting('logo_b64');
+  if (!existingLogo) {
+    for (const ext of ['.png','.jpg','.jpeg','.webp']) {
+      const fp = path.join(__dir, 'public', 'assets', 'logo'+ext);
+      if (fs.existsSync(fp)) {
+        try {
+          const buf = fs.readFileSync(fp);
+          const mime = ext === '.webp' ? 'image/webp' : ext === '.png' ? 'image/png' : 'image/jpeg';
+          await upsertSetting('logo_b64', `data:${mime};base64,${buf.toString('base64')}`);
+          await upsertSetting('logo_ext', ext);
+          console.log('Logo seeded into DB from', fp);
+        } catch(e) { console.warn('Logo seed failed:', e.message); }
+        break;
+      }
+    }
+  }
+
   // Default superadmin on first run
   const userCount = (await sql`SELECT COUNT(*) as c FROM users`)[0];
   if (parseInt(userCount.c) === 0) {
