@@ -1213,7 +1213,7 @@ async function generatePDF(report) {
       doc.rect(50, y, COL, 28).fill(BLUE);
       doc.fillColor('#ffffff').fontSize(10).font('Helvetica-Bold')
          .text('TOTAL REIMBURSEMENT REQUEST', 56, y + 8, { width: COL * 0.6 });
-      doc.fillColor('#f39c12').fontSize(13).font('Helvetica-Bold')
+      doc.fillColor('#ffffff').fontSize(13).font('Helvetica-Bold')
          .text(`$${total.toFixed(2)}`, 56, y + 7, { width: COL - 12, align: 'right' });
       y += 40;
 
@@ -1229,14 +1229,8 @@ async function generatePDF(report) {
       }
       y += 34;
 
-      // ── Footer note
+      // ── Footer divider
       doc.moveTo(50, y).lineTo(50 + COL, y).stroke('#e5e7eb');
-      y += 10;
-      doc.fillColor(RED).fontSize(8.5).font('Helvetica-Bold')
-         .text('NOTE: All reimbursements require itemized receipts.', 50, y);
-      y += 14;
-      doc.fillColor('#374151').fontSize(8.5).font('Helvetica')
-         .text('Email completed forms to: Therealslimsherri@gmail.com   cc: Thedadbodveteran@outlook.com', 50, y);
 
       // ── Submitted by / date
       const pageCount = doc.bufferedPageRange().count;
