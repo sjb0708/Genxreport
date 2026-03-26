@@ -237,6 +237,19 @@ async function deleteStaleDraft(id, label, btn) {
   loadDashboard();
 }
 
+async function deleteReportFromDetail() {
+  if (!_currentDetailReportId) return;
+  if (!confirm('Delete this report permanently? This cannot be undone.')) return;
+  const btn = document.getElementById('btnDeleteReport');
+  btn.disabled = true;
+  const res = await fetch(`/api/reports/${_currentDetailReportId}`, { method:'DELETE' });
+  if (!res.ok) { toast('Delete failed.', 'error'); btn.disabled=false; return; }
+  closeModal('reportDetailModal');
+  toast('Report deleted.', 'warning');
+  loadDashboard();
+  loadAllReports();
+}
+
 function animateCounter(el, target) {
   if (typeof target !== 'number') return;
   const duration = 800;
@@ -362,7 +375,10 @@ async function reopenReport(reportId, btn) {
   loadDashboard();
 }
 
+let _currentDetailReportId = null;
+
 async function openReportDetail(reportId) {
+  _currentDetailReportId = reportId;
   const res = await fetch(`/api/reports/${reportId}`);
   if (!res.ok) { toast('Could not load report.', 'error'); return; }
   const r = await res.json();
