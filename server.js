@@ -759,6 +759,18 @@ app.post('/api/reports/:id/reopen', requireAdmin, async (req, res) => {
   });
 });
 
+// User self-service: reopen their own REJECTED report for correction
+app.post('/api/reports/:id/reopen-for-correction', requireLogin, async (req, res) => {
+  const report = (await sql`SELECT * FROM reports WHERE id=${req.params.id}`)[0];
+  if (!report) return res.status(404).json({ error: 'Not found' });
+  if (report.user_id !== req.user.id) return res.status(403).json({ error: 'Forbidden' });
+  if (report.status !== 'rejected') return res.status(400).json({ error: 'Only rejected reports can be reopened for correction' });
+  await sql`UPDATE reports SET status=${'draft'}, reviewed_at=NULL, reviewed_by=NULL WHERE id=${req.params.id}`;
+  // Keep admin_notes so user can see what was wrong
+  res.json({ success: true });
+  setImmediate(() => notifyAdmins(`🔄 ${req.user.username} has corrected and will resubmit their report for ${report.event_location}.`, req.params.id, 'info'));
+});
+
 // Mark Under Review (admin)
 app.post('/api/reports/:id/under_review', requireAdmin, async (req, res) => {
   const report = (await sql`SELECT r.status, r.user_id, r.event_location FROM reports r WHERE r.id=${req.params.id}`)[0];

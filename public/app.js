@@ -378,9 +378,22 @@ function renderReportDetail() {
     adminActions.style.display = 'none';
   }
 
-  // Status banner (admin notes, under review, paid)
+  // Status banner (admin notes, under review, paid, rejected)
   const banner = document.getElementById('adminNotesBanner');
-  if (r.status === 'under_review') {
+  if (r.status === 'rejected' && !isAdmin) {
+    // Show rejection reason + self-service correction button for the user
+    document.getElementById('adminNotesText').innerHTML =
+      `<div style="font-weight:700;margin-bottom:4px;">❌ This report was rejected.</div>` +
+      (r.admin_notes ? `<div style="margin-bottom:10px;">"${esc(r.admin_notes)}"</div>` : '') +
+      `<div>Make your corrections and resubmit:</div>` +
+      `<button class="btn btn-primary btn-sm" style="margin-top:8px;" onclick="userReopenForCorrection()">✏️ Edit & Resubmit</button>`;
+    banner.style.display = 'flex';
+    banner.style.flexDirection = 'column';
+    banner.style.alignItems = 'flex-start';
+    banner.style.background = '#fee2e2';
+    banner.style.borderColor = '#fca5a5';
+    banner.style.color = '#dc2626';
+  } else if (r.status === 'under_review') {
     document.getElementById('adminNotesText').textContent = '🔍 This report is currently under review by the admin.';
     banner.style.display = 'flex';
     banner.style.background = '#ede9fe';
@@ -630,6 +643,13 @@ async function appReopen() {
   const res = await fetch(`/api/reports/${currentReport.id}/reopen`, { method: 'POST' });
   if (!res.ok) { toast('Reopen failed', 'error'); return; }
   toast('Report reopened to draft.', 'info');
+  await refreshReport(); loadReports();
+}
+
+async function userReopenForCorrection() {
+  const res = await fetch(`/api/reports/${currentReport.id}/reopen-for-correction`, { method: 'POST' });
+  if (!res.ok) { toast('Could not reopen report.', 'error'); return; }
+  toast('Report reopened — make your corrections and resubmit.', 'info');
   await refreshReport(); loadReports();
 }
 
