@@ -401,9 +401,10 @@ async function openReportDetail(reportId) {
       </tr></thead>
       <tbody>${(r.expenses||[]).map(e=>{
         const receipts = (e.receipts||[]).map(rec => {
+          const url   = `/api/receipts/${rec.id}/file`;
           const isImg = /\.(jpg|jpeg|png|gif|webp)/i.test(rec.filename);
-          if (isImg) return `<img src="/uploads/${rec.filename}" style="height:48px;width:48px;object-fit:cover;border-radius:6px;border:1px solid #e5e7eb;cursor:pointer;" onclick="window.open('/uploads/${rec.filename}','_blank')" title="${esc(rec.original_name)}">`;
-          return `<a href="/uploads/${rec.filename}" target="_blank" style="display:inline-flex;align-items:center;justify-content:center;height:48px;width:48px;border-radius:6px;border:1px solid #e5e7eb;font-size:20px;text-decoration:none;" title="${esc(rec.original_name)}">📄</a>`;
+          if (isImg) return `<img src="${url}" style="height:48px;width:48px;object-fit:cover;border-radius:6px;border:1px solid #e5e7eb;cursor:pointer;" onclick="window.open('${url}','_blank')" title="${esc(rec.original_name)}">`;
+          return `<a href="${url}" target="_blank" style="display:inline-flex;align-items:center;justify-content:center;height:48px;width:48px;border-radius:6px;border:1px solid #e5e7eb;font-size:20px;text-decoration:none;" title="${esc(rec.original_name)}">📄</a>`;
         }).join('');
         return `
         <tr style="border-bottom:1px solid #f3f4f6;">

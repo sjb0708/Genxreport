@@ -441,7 +441,7 @@ function renderExpenses() {
 
 function renderThumbs(exp, isDraft) {
   return (exp.receipts||[]).map(r => {
-    const url = `/uploads/${r.filename}`;
+    const url = `/api/receipts/${r.id}/file`;
     const isImg = /\.(jpg|jpeg|png|gif|webp)/i.test(r.filename);
     if (!isImg) return `
       <div class="receipt-thumb" onclick="window.open('${url}','_blank')" title="${esc(r.original_name)}">

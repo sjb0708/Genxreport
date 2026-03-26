@@ -97,6 +97,7 @@ async function initDB() {
       FOREIGN KEY (report_id)  REFERENCES reports(id)
     )
   `;
+  await sql`ALTER TABLE receipts ADD COLUMN IF NOT EXISTS file_data TEXT`;
 
   await sql`
     CREATE TABLE IF NOT EXISTS tour_stops (
@@ -713,13 +714,9 @@ app.delete('/api/expenses/:id', requireLogin, async (req, res) => {
 
 // ─── Receipts ──────────────────────────────────────────────────────────────
 
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => cb(null, UPLOAD_DIR),
-  filename:    (req, file, cb) => cb(null, uuidv4() + path.extname(file.originalname).toLowerCase())
-});
 const upload = multer({
-  storage,
-  limits: { fileSize: 20 * 1024 * 1024 },
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 10 * 1024 * 1024 },
   fileFilter: (req, file, cb) => {
     if (/jpeg|jpg|png|gif|pdf|heic|heif|webp/i.test(path.extname(file.originalname))) cb(null, true);
     else cb(new Error('Images and PDFs only'));
@@ -734,11 +731,28 @@ app.post('/api/expenses/:expenseId/receipts', requireLogin, upload.array('receip
   const isAdmin = req.user.role === 'admin' || req.user.role === 'superadmin';
   if (!isAdmin && report.user_id !== req.user.id) return res.status(403).json({ error: 'Forbidden' });
   const inserted = await Promise.all(req.files.map(async file => {
-    const id = uuidv4();
-    await sql`INSERT INTO receipts (id, expense_id, report_id, filename, original_name, mimetype) VALUES (${id}, ${req.params.expenseId}, ${exp.report_id}, ${file.filename}, ${file.originalname}, ${file.mimetype})`;
-    return (await sql`SELECT * FROM receipts WHERE id=${id}`)[0];
+    const id       = uuidv4();
+    const filename = id + path.extname(file.originalname).toLowerCase();
+    const b64      = `data:${file.mimetype};base64,${file.buffer.toString('base64')}`;
+    // Save to disk as fallback (local dev)
+    try { fs.writeFileSync(path.join(UPLOAD_DIR, filename), file.buffer); } catch(_){}
+    await sql`INSERT INTO receipts (id, expense_id, report_id, filename, original_name, mimetype, file_data)
+              VALUES (${id}, ${req.params.expenseId}, ${exp.report_id}, ${filename}, ${file.originalname}, ${file.mimetype}, ${b64})`;
+    return (await sql`SELECT id, expense_id, report_id, filename, original_name, mimetype, uploaded_at FROM receipts WHERE id=${id}`)[0];
   }));
   res.json(inserted);
+});
+
+// Serve receipt from DB (persistent on Vercel)
+app.get('/api/receipts/:id/file', requireLogin, async (req, res) => {
+  const r = (await sql`SELECT mimetype, file_data FROM receipts WHERE id=${req.params.id}`)[0];
+  if (!r) return res.status(404).send('Not found');
+  if (r.file_data) {
+    const [, data] = r.file_data.split(',');
+    res.setHeader('Content-Type', r.mimetype || 'application/octet-stream');
+    return res.send(Buffer.from(data, 'base64'));
+  }
+  res.status(404).send('No file data');
 });
 
 app.delete('/api/receipts/:id', requireLogin, async (req, res) => {
